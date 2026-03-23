@@ -8,6 +8,10 @@ namespace JDownloader.Cli.Commands.Accounts;
 
 public sealed class AccountsBasicAuthUpdateSettings : DeviceCommandSettings
 {
+    [CommandOption("--basic-auth-id <ID>")]
+    [Description("Basic auth entry id to update.")]
+    public long? BasicAuthId { get; init; }
+
     [CommandOption("--type <TYPE>")]
     [Description("Basic auth type: http or ftp.")]
     public string? Type { get; init; }
@@ -52,14 +56,45 @@ public sealed class AccountsBasicAuthUpdateCommand : DeviceApiCommand<AccountsBa
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(settings.Type)
+        if (settings.BasicAuthId is null
+            || string.IsNullOrWhiteSpace(settings.Type)
             || string.IsNullOrWhiteSpace(settings.Hostmask)
             || string.IsNullOrWhiteSpace(settings.Username))
         {
-            throw CliException.Usage("accounts basic-auth update requires --type <http|ftp> --hostmask <mask> --username <name> and exactly one password source.");
+            throw CliException.Usage("accounts basic-auth update requires --basic-auth-id <id> --type <http|ftp> --hostmask <mask> --username <name> and exactly one password source.");
         }
 
         var type = AccountsBasicAuthAddCommand.NormalizeBasicAuthType(settings.Type);
+
+        if (!string.IsNullOrWhiteSpace(settings.Password) && settings.PasswordStdin)
+            throw CliException.Usage("accounts basic-auth update requires exactly one of --password <password> or --password-stdin.");
+
+        var previewPlan = new MyJdRequestPlan(
+            "accounts.basic-auth.update",
+            "POST",
+            "/accountsV2/updateBasicAuth",
+            new Dictionary<string, object?>
+            {
+                ["id"] = settings.BasicAuthId.Value,
+                ["type"] = type,
+                ["hostmask"] = settings.Hostmask.Trim(),
+                ["username"] = settings.Username.Trim(),
+                ["password"] = SecretInput.Redacted,
+            },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(
+            settings,
+            $"'accounts basic-auth update' will update the basic auth entry for '{settings.Hostmask.Trim()}'.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,
             settings.PasswordStdin,
@@ -71,30 +106,17 @@ public sealed class AccountsBasicAuthUpdateCommand : DeviceApiCommand<AccountsBa
             "Password: ",
             cancellationToken);
 
-        var plan = new MyJdRequestPlan(
-            "accounts.basic-auth.update",
-            "POST",
-            "/accountsV2/updateBasicAuth",
-            new Dictionary<string, object?>
+        var plan = previewPlan with
+        {
+            Query = new Dictionary<string, object?>
             {
+                ["id"] = settings.BasicAuthId.Value,
                 ["type"] = type,
                 ["hostmask"] = settings.Hostmask.Trim(),
                 ["username"] = settings.Username.Trim(),
                 ["password"] = password,
             },
-            null,
-            true,
-            false,
-            resolved.Device?.Id);
-
-        if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
-
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            $"'accounts basic-auth update' will update the basic auth entry for '{settings.Hostmask.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        };
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

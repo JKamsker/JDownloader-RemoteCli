@@ -40,8 +40,8 @@ public sealed class DownloadsStopmarkSetCommand : DeviceApiCommand<DownloadsStop
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
-        if (settings.LinkId is null && settings.PackageId is null)
-            throw CliException.Usage("downloads stopmark set requires --link-id <id> or --package-id <id>.");
+        if (settings.LinkId is null || settings.PackageId is null)
+            throw CliException.Usage("downloads stopmark set requires both --link-id <id> and --package-id <id>.");
 
         var plan = new MyJdRequestPlan(
             "downloads.stopmark.set",
@@ -49,8 +49,8 @@ public sealed class DownloadsStopmarkSetCommand : DeviceApiCommand<DownloadsStop
             "/downloadsV2/setStopMark",
             new Dictionary<string, object?>
             {
-                ["linkId"] = settings.LinkId,
-                ["packageId"] = settings.PackageId,
+                ["linkId"] = settings.LinkId.Value,
+                ["packageId"] = settings.PackageId.Value,
             },
             null,
             true,

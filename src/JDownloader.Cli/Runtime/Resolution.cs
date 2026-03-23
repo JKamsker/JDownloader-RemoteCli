@@ -82,9 +82,12 @@ public sealed class ProfileResolver : IProfileResolver
         if (config.Profiles.Count == 1)
             return (config.Profiles.Keys.Single(), "single-profile-inference");
 
+        if (config.Profiles.Count == 0)
+            return ("default", "empty-config-default");
+
         throw CliException.Usage(
             "Profile is required because no default profile could be resolved.",
-            "Pass --profile <name> or run 'jd2 auth profiles add <name>'.");
+            "Pass --profile <name> or run 'jdr auth profiles add <name>'.");
     }
 
     private (OutputMode OutputMode, string Source) ResolveOutputMode(GlobalSettings settings, ProfileRecord profile)
@@ -186,7 +189,7 @@ public sealed class ProfileResolver : IProfileResolver
         {
             throw CliException.Usage(
                 "Device is required because no default device could be resolved.",
-                "Pass --device <id-or-name> or run 'jd2 device use --device <id-or-name>'.");
+                "Pass --device <id-or-name> or run 'jdr device use --device <id-or-name>'.");
         }
 
         return (null, null);

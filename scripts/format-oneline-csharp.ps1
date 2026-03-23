@@ -9,7 +9,7 @@ function Should-ReformatFile([string] $content) {
         return $false
     }
 
-    # Heuristic: these stub files have a single mega-line after the usings.
+    # Heuristic: some generated/templated files end up as a single mega-line after the usings.
     $lines = $content -split "\r?\n"
     return ($lines | Where-Object { $_.Length -gt 200 }).Count -gt 0
 }
@@ -181,6 +181,5 @@ foreach ($file in $targets) {
 }
 
 if ($changed -gt 0) {
-    Write-Host "Reformatted $changed file(s) with one-line stubs."
+    Write-Host "Reformatted $changed one-line C# file(s)."
 }
-

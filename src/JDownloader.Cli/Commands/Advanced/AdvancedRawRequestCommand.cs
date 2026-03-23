@@ -26,16 +26,27 @@ public sealed class RawRequestSettings : DeviceCommandSettings
     [CommandOption("--output-file <PATH>")]
     [Description("Destination for binary response modes.")]
     public string? OutputFile { get; init; }
+
+    [CommandOption("--destructive")]
+    [Description("Mark this call as destructive and require confirmation (unless -y/--yes).")]
+    public bool Destructive { get; init; }
 }
 
 public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSettings>
 {
     private readonly IMyJdTransport _transport;
+    private readonly IConfirmationGuard _confirmationGuard;
 
-    public AdvancedRawRequestCommand(IProfileResolver profileResolver, IOutputRenderer outputRenderer, IDiagnosticLogger diagnosticLogger, IMyJdTransport transport)
+    public AdvancedRawRequestCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport,
+        IConfirmationGuard confirmationGuard)
         : base(profileResolver, outputRenderer, diagnosticLogger)
     {
         _transport = transport;
+        _confirmationGuard = confirmationGuard;
     }
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RawRequestSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
@@ -48,18 +59,28 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
             throw CliException.Usage("My.JDownloader relay device calls are always POST; '--method' only supports POST.");
         }
 
+        var endpoint = NormalizeEndpoint(settings.Path);
         var plan = new MyJdRequestPlan(
             "advanced.raw.request",
             "POST",
-            settings.Path,
+            endpoint,
             JsonInput.ParseOptional(settings.QueryJson),
             JsonInput.ParseOptional(settings.BodyJson),
-            Destructive: false,
+            Destructive: settings.Destructive,
             ProducesBinary: producesBinary,
             resolved.Device?.Id);
 
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        if (plan.Destructive)
+        {
+            var proceed = await _confirmationGuard.AuthorizeAsync(
+                settings,
+                $"'advanced raw request' will execute a destructive call to '{plan.Endpoint}'.");
+            if (!proceed)
+                return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        }
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
 
@@ -89,5 +110,25 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
                 $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
             ],
             result.Warnings);
+    }
+
+    private static string NormalizeEndpoint(string rawPath)
+    {
+        if (string.IsNullOrWhiteSpace(rawPath))
+            throw CliException.Usage("advanced raw request requires <PATH>.");
+
+        var trimmed = rawPath.Trim();
+
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.AbsolutePath))
+            trimmed = uri.AbsolutePath;
+
+        var queryIndex = trimmed.IndexOfAny(['?', '#']);
+        if (queryIndex >= 0)
+            trimmed = trimmed[..queryIndex];
+
+        if (!trimmed.StartsWith('/'))
+            trimmed = "/" + trimmed;
+
+        return trimmed;
     }
 }

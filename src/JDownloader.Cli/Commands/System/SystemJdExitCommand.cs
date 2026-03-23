@@ -1,15 +1,51 @@
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
+
 namespace JDownloader.Cli.Commands.System;
 
-public sealed class SystemJdExitCommand : SystemCommandBase
+public sealed class SystemJdExitCommand : DeviceApiCommand<DeviceNoArgSettings>
 {
-    public SystemJdExitCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    private readonly IMyJdTransport _transport;
+    private readonly IConfirmationGuard _confirmationGuard;
+
+    public SystemJdExitCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport,
+        IConfirmationGuard confirmationGuard)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-
+        _transport = transport;
+        _confirmationGuard = confirmationGuard;
     }
-    protected override string Operation => "system.jd.exit";
-    protected override string Endpoint => "/jd/exit";
-    protected override bool Destructive => true;
 
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        DeviceNoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        var plan = new MyJdRequestPlan(
+            "system.jd.exit",
+            "POST",
+            "/system/exitJD",
+            null,
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'system jd exit' will exit JDownloader on the selected device.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
+    }
 }

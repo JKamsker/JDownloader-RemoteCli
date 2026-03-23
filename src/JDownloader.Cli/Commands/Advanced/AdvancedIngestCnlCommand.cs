@@ -47,13 +47,17 @@ public sealed class AdvancedIngestCnlCommand : DeviceApiCommand<AdvancedIngestCn
         if (string.IsNullOrWhiteSpace(settings.Url))
             throw CliException.Usage("advanced ingest cnl requires --url <url>.");
 
+        var password = settings.Password?.Trim() ?? string.Empty;
+        if (settings.DryRun && !string.IsNullOrWhiteSpace(password))
+            password = SecretInput.Redacted;
+
         var plan = new MyJdRequestPlan(
             "advanced.ingest.cnl",
             "POST",
             "/flash/add",
             new Dictionary<string, object?>
             {
-                ["password"] = settings.Password?.Trim() ?? string.Empty,
+                ["password"] = password,
                 ["source"] = string.IsNullOrWhiteSpace(settings.Source) ? "jd2-cli" : settings.Source.Trim(),
                 ["url"] = settings.Url.Trim(),
             },

@@ -42,6 +42,5 @@ jdr auth profiles use work
 Then target a profile explicitly:
 
 ```bash
-jdr --profile work auth status
+jdr auth status --profile work
 ```
-

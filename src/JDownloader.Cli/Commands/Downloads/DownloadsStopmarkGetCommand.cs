@@ -1,14 +1,45 @@
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
+
 namespace JDownloader.Cli.Commands.Downloads;
 
-public sealed class DownloadsStopmarkGetCommand : DownloadsCommandBase
+public sealed class DownloadsStopmarkGetCommand : DeviceApiCommand<DeviceNoArgSettings>
 {
-    public DownloadsStopmarkGetCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    private readonly IMyJdTransport _transport;
+
+    public DownloadsStopmarkGetCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-
+        _transport = transport;
     }
-    protected override string Operation => "downloads.stopmark.get";
-    protected override string Endpoint => "/downloadsV2/getStopMark";
 
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        DeviceNoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        var plan = new MyJdRequestPlan(
+            "downloads.stopmark.get",
+            "POST",
+            "/downloadsV2/getStopMark",
+            null,
+            null,
+            false,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
+    }
 }
+

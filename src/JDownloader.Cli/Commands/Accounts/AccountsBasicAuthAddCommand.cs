@@ -60,6 +60,35 @@ public sealed class AccountsBasicAuthAddCommand : DeviceApiCommand<AccountsBasic
         }
 
         var type = NormalizeBasicAuthType(settings.Type);
+
+        if (!string.IsNullOrWhiteSpace(settings.Password) && settings.PasswordStdin)
+            throw CliException.Usage("accounts basic-auth add requires exactly one of --password <password> or --password-stdin.");
+
+        var previewPlan = new MyJdRequestPlan(
+            "accounts.basic-auth.add",
+            "POST",
+            "/accountsV2/addBasicAuth",
+            new Dictionary<string, object?>
+            {
+                ["type"] = type,
+                ["hostmask"] = settings.Hostmask.Trim(),
+                ["username"] = settings.Username.Trim(),
+                ["password"] = SecretInput.Redacted,
+            },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(
+            settings,
+            $"'accounts basic-auth add' will add a {type} basic auth entry for '{settings.Hostmask.Trim()}'.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,
             settings.PasswordStdin,
@@ -71,30 +100,16 @@ public sealed class AccountsBasicAuthAddCommand : DeviceApiCommand<AccountsBasic
             "Password: ",
             cancellationToken);
 
-        var plan = new MyJdRequestPlan(
-            "accounts.basic-auth.add",
-            "POST",
-            "/accountsV2/addBasicAuth",
-            new Dictionary<string, object?>
+        var plan = previewPlan with
+        {
+            Query = new Dictionary<string, object?>
             {
                 ["type"] = type,
                 ["hostmask"] = settings.Hostmask.Trim(),
                 ["username"] = settings.Username.Trim(),
                 ["password"] = password,
             },
-            null,
-            true,
-            false,
-            resolved.Device?.Id);
-
-        if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
-
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            $"'accounts basic-auth add' will add a {type} basic auth entry for '{settings.Hostmask.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        };
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

@@ -49,7 +49,34 @@ public sealed class AccountsAddCommand : DeviceApiCommand<AccountsAddSettings>
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(settings.Hoster) || string.IsNullOrWhiteSpace(settings.Username))
-            throw CliException.Usage("accounts add requires --hoster <name> --username <name> and exactly one password source.");
+            throw CliException.Usage("accounts add requires --hoster <name> --username <name>.");
+
+        if (!string.IsNullOrWhiteSpace(settings.Password) && settings.PasswordStdin)
+            throw CliException.Usage("accounts add requires exactly one of --password <password> or --password-stdin.");
+
+        var previewPlan = new MyJdRequestPlan(
+            "accounts.add",
+            "POST",
+            "/accountsV2/addAccount",
+            new Dictionary<string, object?>
+            {
+                ["hoster"] = settings.Hoster.Trim(),
+                ["username"] = settings.Username.Trim(),
+                ["password"] = SecretInput.Redacted,
+            },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(
+            settings,
+            $"'accounts add' will add account '{settings.Username.Trim()}' for '{settings.Hoster.Trim()}'.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,
@@ -62,29 +89,15 @@ public sealed class AccountsAddCommand : DeviceApiCommand<AccountsAddSettings>
             "Password: ",
             cancellationToken);
 
-        var plan = new MyJdRequestPlan(
-            "accounts.add",
-            "POST",
-            "/accountsV2/addAccount",
-            new Dictionary<string, object?>
+        var plan = previewPlan with
+        {
+            Query = new Dictionary<string, object?>
             {
                 ["hoster"] = settings.Hoster.Trim(),
                 ["username"] = settings.Username.Trim(),
                 ["password"] = password,
             },
-            null,
-            true,
-            false,
-            resolved.Device?.Id);
-
-        if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
-
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            $"'accounts add' will add account '{settings.Username.Trim()}' for '{settings.Hoster.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        };
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

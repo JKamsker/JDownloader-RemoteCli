@@ -498,6 +498,8 @@ internal static class MyJdParameterMapper
             "/linkgrabberv2/queryLinkCrawlerJobs" => BuildJsonStringParameter(
                 BuildGrabberJobsQuery(plan.Query, out var warnings),
                 warnings),
+            "/linkgrabberv2/addLinks" => BuildGrabberAddLinksParameters(plan.Query, out var warnings),
+            "/linkgrabberv2/addContainer" => BuildGrabberAddContainerParameters(plan.Query, out var warnings),
             "/downloadsV2/queryLinks" => BuildJsonStringParameter(
                 BuildDownloadsLinksQuery(plan.Query, out var warnings),
                 warnings),
@@ -515,27 +517,27 @@ internal static class MyJdParameterMapper
                 warnings),
             "/accountsV2/disableAccounts" => BuildLongArrayParameters(
                 plan.Query,
-                "accountIds",
+                ["accountIds", "ids"],
                 "accounts disable requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/enableAccounts" => BuildLongArrayParameters(
                 plan.Query,
-                "accountIds",
+                ["accountIds", "ids"],
                 "accounts enable requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/refreshAccounts" => BuildLongArrayParameters(
                 plan.Query,
-                "accountIds",
+                ["accountIds", "ids"],
                 "accounts refresh requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/removeAccounts" => BuildLongArrayParameters(
                 plan.Query,
-                "accountIds",
+                ["accountIds", "ids"],
                 "accounts remove requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/removeBasicAuths" => BuildLongArrayParameters(
                 plan.Query,
-                "basicAuthIds",
+                ["basicAuthIds", "ids"],
                 "accounts basic-auth remove requires at least one --basic-auth-id <id>.",
                 out var warnings),
             "/accountsV2/addAccount" => BuildAccountsAddParameters(plan.Query, out var warnings),
@@ -582,10 +584,6 @@ internal static class MyJdParameterMapper
                 plan.Query,
                 "downloads links remove requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
-            "/downloadsV2/removePackages" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
-                "downloads packages remove requires at least one --package-id <id>.",
-                out var warnings),
             "/linkgrabberv2/moveToDownloadlist" => BuildLinkAndPackageIdsParameters(
                 plan.Query,
                 "grabber move-to-downloads requires at least one --link-id <id> or --package-id <id>.",
@@ -593,10 +591,6 @@ internal static class MyJdParameterMapper
             "/linkgrabberv2/removeLinks" => BuildLinkAndPackageIdsParameters(
                 plan.Query,
                 "grabber links remove requires at least one --link-id <id> or --package-id <id>.",
-                out var warnings),
-            "/linkgrabberv2/removePackages" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
-                "grabber packages remove requires at least one --package-id <id>.",
                 out var warnings),
             "/linkgrabberv2/getVariants" => BuildSingleLongParameter(
                 plan.Query,
@@ -617,6 +611,11 @@ internal static class MyJdParameterMapper
                 out var warnings),
             "/plugins/get" => BuildPluginsGetParameters(plan.Query, out var warnings),
             "/system/getStorageInfos" => BuildSystemStorageParameters(plan.Query, out var warnings),
+            "/system/shutdownOS" => BuildSingleBooleanParameter(
+                plan.Query,
+                "force",
+                "system os shutdown requires --force (or omit it to send force=false).",
+                out var warnings),
             "/contentV2/getIcon" => BuildContentGetIconParameters(plan.Query, out var warnings),
             "/contentV2/getFavIcon" => BuildContentGetFavIconParameters(plan.Query, out var warnings),
             "/contentV2/getFileIcon" => BuildContentGetFileIconParameters(plan.Query, out var warnings),
@@ -626,7 +625,9 @@ internal static class MyJdParameterMapper
                 "value",
                 "downloads pause requires either no flags (pause) or --resume.",
                 out var warnings),
+            "/downloadsV2/getStopMark" => EnsureNoParameters(plan, "downloads stopmark get does not accept query/body parameters."),
             "/dialogs/get" => BuildDialogsGetParameters(plan.Query, out var warnings),
+            "/dialogs/list" => EnsureNoParameters(plan, "advanced dialogs list does not accept query/body parameters."),
             "/dialogs/getTypeInfo" => BuildSingleStringParameter(
                 plan.Query,
                 "dialogType",
@@ -840,30 +841,33 @@ internal static class MyJdParameterMapper
     {
         warnings = null;
         if (query is Dictionary<string, object?> values
+            && values.TryGetValue("id", out var rawId)
             && values.TryGetValue("type", out var rawType)
             && values.TryGetValue("hostmask", out var rawHostmask)
             && values.TryGetValue("username", out var rawUsername)
             && values.TryGetValue("password", out var rawPassword)
+            && rawId is not null
             && rawType is not null
             && rawHostmask is not null
             && rawUsername is not null
             && rawPassword is not null
+            && TryReadLong(rawId, out var id)
             && !string.IsNullOrWhiteSpace(rawType.ToString())
             && !string.IsNullOrWhiteSpace(rawHostmask.ToString())
             && !string.IsNullOrWhiteSpace(rawUsername.ToString()))
         {
-            var payload = JsonSerializer.Serialize(
-                new Dictionary<string, object?>
-                {
-                    ["type"] = rawType.ToString(),
-                    ["hostmask"] = rawHostmask.ToString(),
-                    ["username"] = rawUsername.ToString(),
-                    ["password"] = rawPassword.ToString(),
-                });
-            return (new object?[] { payload }, null);
+            var updatedEntry = new Dictionary<string, object?>
+            {
+                ["id"] = id,
+                ["type"] = rawType.ToString(),
+                ["hostmask"] = rawHostmask.ToString(),
+                ["username"] = rawUsername.ToString(),
+                ["password"] = rawPassword.ToString(),
+            };
+            return (new object?[] { updatedEntry }, null);
         }
 
-        throw CliException.Usage("accounts basic-auth update requires --type <http|ftp> --hostmask <mask> --username <name> and exactly one password source.");
+        throw CliException.Usage("accounts basic-auth update requires --basic-auth-id <id> --type <http|ftp> --hostmask <mask> --username <name> and exactly one password source.");
     }
 
     private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildLongArrayParameters(
@@ -872,12 +876,23 @@ internal static class MyJdParameterMapper
         string usageMessage,
         out IReadOnlyList<string>? warnings)
     {
+        return BuildLongArrayParameters(query, [key], usageMessage, out warnings);
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildLongArrayParameters(
+        object? query,
+        string[] keys,
+        string usageMessage,
+        out IReadOnlyList<string>? warnings)
+    {
         warnings = null;
-        if (query is Dictionary<string, object?> values
-            && values.TryGetValue(key, out var rawValues)
-            && TryReadLongArray(rawValues, out var longValues))
+        if (query is Dictionary<string, object?> values)
         {
-            return (new object?[] { longValues }, null);
+            foreach (var key in keys)
+            {
+                if (values.TryGetValue(key, out var rawValues) && TryReadLongArray(rawValues, out var longValues))
+                    return (new object?[] { longValues }, null);
+            }
         }
 
         throw CliException.Usage(usageMessage);
@@ -1203,6 +1218,43 @@ internal static class MyJdParameterMapper
         throw CliException.Usage("advanced ingest cnl requires --url <url>.");
     }
 
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildGrabberAddContainerParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("type", out var rawType)
+            && values.TryGetValue("content", out var rawContent)
+            && rawType is not null
+            && rawContent is not null
+            && !string.IsNullOrWhiteSpace(rawType.ToString())
+            && !string.IsNullOrWhiteSpace(rawContent.ToString()))
+        {
+            return (new object?[] { rawType.ToString(), rawContent.ToString() }, null);
+        }
+
+        throw CliException.Usage("grabber add-container requires --type <type> and --content <content>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildGrabberAddLinksParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values)
+        {
+            var hasLinks = values.TryGetValue("links", out var links)
+                && links is not null
+                && !string.IsNullOrWhiteSpace(links.ToString());
+
+            var hasDataUrls = values.TryGetValue("dataURLs", out var dataUrls)
+                && dataUrls is not null
+                && !IsEmpty(dataUrls);
+
+            if (hasLinks || hasDataUrls)
+                return (new object?[] { values }, null);
+        }
+
+        throw CliException.Usage("grabber add requires at least one link input (AddLinksQuery.links or AddLinksQuery.dataURLs).");
+    }
+
     private static object BuildQueryObject(
         object? query,
         Dictionary<string, object?> defaults,
@@ -1239,9 +1291,9 @@ internal static class MyJdParameterMapper
         }
 
         if (values.TryGetValue("hosters", out var hosters) && !IsEmpty(hosters))
-            localWarnings.Add("The current live mapper does not translate --hoster for this endpoint.");
+            throw CliException.Usage("This endpoint does not support --hoster.");
         if (values.TryGetValue("linkIds", out var linkIds) && !IsEmpty(linkIds))
-            localWarnings.Add("The current live mapper does not translate --link-id for this endpoint.");
+            throw CliException.Usage("This endpoint does not support --link-id.");
 
         warnings = localWarnings.Count == 0 ? null : localWarnings;
         return result;

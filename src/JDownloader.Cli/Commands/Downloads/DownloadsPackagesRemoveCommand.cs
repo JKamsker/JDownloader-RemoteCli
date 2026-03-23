@@ -1,15 +1,63 @@
+using System.ComponentModel;
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
+
 namespace JDownloader.Cli.Commands.Downloads;
 
-public sealed class DownloadsPackagesRemoveCommand : DownloadsCommandBase
+public sealed class DownloadsPackagesRemoveSettings : DeviceCommandSettings
 {
-    public DownloadsPackagesRemoveCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
-    {
-
-    }
-    protected override string Operation => "downloads.packages.remove";
-    protected override string Endpoint => "/downloadsV2/removePackages";
-    protected override bool Destructive => true;
-
+    [CommandOption("--package-id <ID>")]
+    [Description("Repeatable download package identifier to remove.")]
+    public long[] PackageIds { get; init; } = [];
 }
+
+public sealed class DownloadsPackagesRemoveCommand : DeviceApiCommand<DownloadsPackagesRemoveSettings>
+{
+    private readonly IMyJdTransport _transport;
+    private readonly IConfirmationGuard _confirmationGuard;
+
+    public DownloadsPackagesRemoveCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport,
+        IConfirmationGuard confirmationGuard)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
+    {
+        _transport = transport;
+        _confirmationGuard = confirmationGuard;
+    }
+
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        DownloadsPackagesRemoveSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        if (settings.PackageIds.Length == 0)
+            throw CliException.Usage("downloads packages remove requires at least one --package-id <id>.");
+
+        var plan = new MyJdRequestPlan(
+            "downloads.packages.remove",
+            "POST",
+            "/downloadsV2/removeLinks",
+            new Dictionary<string, object?> { ["packageIds"] = settings.PackageIds },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'downloads packages remove' will remove selected download packages.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
+    }
+}
+

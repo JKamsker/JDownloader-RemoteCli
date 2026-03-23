@@ -4,6 +4,8 @@ namespace JDownloader.Cli.Runtime;
 
 public static class SecretInput
 {
+    public const string Redacted = "<redacted>";
+
     public static async Task<string> ReadSecretAsync(
         string? explicitValue,
         bool useStdin,

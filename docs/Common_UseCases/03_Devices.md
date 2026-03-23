@@ -19,7 +19,7 @@ jdr device use --device "My Laptop"
 You can also override per-call:
 
 ```bash
-jdr --device "My Laptop" downloads status
+jdr downloads status --device "My Laptop"
 ```
 
 Or via environment variable:
@@ -27,4 +27,3 @@ Or via environment variable:
 ```bash
 export JD2_DEVICE="My Laptop"
 ```
-

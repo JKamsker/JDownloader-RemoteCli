@@ -40,6 +40,26 @@ public sealed class ExtractionAddPasswordCommand : DeviceApiCommand<ExtractionAd
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(settings.Password) && settings.PasswordStdin)
+            throw CliException.Usage("extraction add-password requires exactly one of --password <password> or --password-stdin.");
+
+        var previewPlan = new MyJdRequestPlan(
+            "extraction.add-password",
+            "POST",
+            "/extraction/addArchivePassword",
+            new Dictionary<string, object?> { ["password"] = SecretInput.Redacted },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'extraction add-password' will add an archive password to JDownloader.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
+
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,
             settings.PasswordStdin,
@@ -51,22 +71,10 @@ public sealed class ExtractionAddPasswordCommand : DeviceApiCommand<ExtractionAd
             "Password: ",
             cancellationToken);
 
-        var plan = new MyJdRequestPlan(
-            "extraction.add-password",
-            "POST",
-            "/extraction/addArchivePassword",
-            new Dictionary<string, object?> { ["password"] = password },
-            null,
-            true,
-            false,
-            resolved.Device?.Id);
-
-        if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
-
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'extraction add-password' will add an archive password to JDownloader.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        var plan = previewPlan with
+        {
+            Query = new Dictionary<string, object?> { ["password"] = password },
+        };
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

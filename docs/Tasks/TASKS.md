@@ -2,9 +2,20 @@
 - [x] Make `advanced raw request --method` honest (either enforce POST-only or implement method semantics)
 - [x] Remove/replace novelty endpoints as first-class commands (`advanced ui focus` => `/jd/doSomethingCool`, `advanced ingest flash` => `/flashgot`) and resolve `advanced ui refresh` duplication
 - [x] Fix `grabber jobs get` endpoint (currently `/linkgrabberv2/getPackageCount`) and add a proper “get by job id” UX
-- [x] Add mapper + required-id enforcement for `downloads packages remove` (`/downloadsV2/removePackages`) and `grabber packages remove` (`/linkgrabberv2/removePackages`)
+- [x] Implement `downloads packages remove` and `grabber packages remove` using documented `removeLinks` endpoints with required `--package-id`
 - [x] Add mapper support (or intentionally document no-params) for accounts list endpoints: `/accountsV2/listBasicAuth`, `/accountsV2/listPremiumHoster`, `/accountsV2/listPremiumHosterUrls`
 - [x] Make `--query-json` a true override (don’t wrap as `queryOverride`) so unmapped endpoints (captcha/events/etc.) work as intended
 - [x] Fix device/profile resolution so stale `--device`/`JD2_DEVICE` doesn’t break commands that don’t need a device (`device list/use`, `auth status/whoami/logout`), and avoid crashes when a profile record doesn’t exist yet
 - [x] Make `system storage` honor `--dry-run` and reconcile docs vs behavior; address potential “double JSON envelope” preview behavior for destructive commands
 - [x] Validate: `dotnet test -c Release` + quick CLI help smoke (`dotnet run --project src/JDownloader.Cli -- --help`)
+
+- [x] Fix `system jd exit|restart` to use documented endpoints (`/system/exitJD`, `/system/restartJD`) and make `system os shutdown` pass the required `force` param
+- [x] Fix `advanced dialogs list` to be a true 0-arg endpoint (don’t accept selector flags; enforce no query/body even on `--dry-run`)
+- [x] Normalize `advanced raw request` endpoint paths (add leading `/` when missing) and add an explicit `--destructive` flag to require confirmation for destructive calls
+- [x] Implement missing `grabber add` + `grabber add-container` parameters (type/content/query) per docs and add mapper support
+- [x] Make `downloads stopmark set` require both `--link-id` and `--package-id`; make `downloads stopmark get` enforce 0-args
+- [x] Make `--no-color` functional (disable ANSI/color output)
+- [x] Fix selector plumbing gaps for list/query endpoints (`--hoster`, `--link-id`, jobs list `--job-id`) or reject unsupported flags with a usage error
+- [x] Verify `plugins list` query mapping matches docs (`pattern`/`version` are projection booleans)
+- [x] Fix docs mismatches: `jd2` vs `jdr`, removed `advanced ui` commands, and “global flags before command” examples that Spectre currently rejects
+- [x] Fix repo tooling docs (`.githooks/*`, `scripts/format-oneline-csharp.ps1`) to describe what they actually do (no “command stubs” wording unless true)

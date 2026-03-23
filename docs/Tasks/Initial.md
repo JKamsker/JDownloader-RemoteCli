@@ -1,4 +1,4 @@
-# JDownloader 2 CLI v1 Plan (`jd2`)
+# JDownloader Remote CLI v1 Plan (`jdr`)
 
 ## Summary
 
@@ -10,18 +10,18 @@
 ## Public Contract
 
 ```text
-jd2
+jdr
   auth        login/logout/status/whoami/profiles [list|get|add|rename|remove|use]
   device      list/get/use/ping/direct-info
-  downloads   status/speed/start/stop/pause; links [...]; packages [...]; stopmark [...]
-  grabber     add/add-container/clear/move-to-downloads; links [...]; packages [...]; jobs [...]; variants [...]
-  accounts    list/get/add/update/enable/disable/remove/refresh; hosters [...]; basic-auth [...]
+  downloads   status/speed/start/stop/pause; links [list|remove]; packages [list|remove]; stopmark [get|set|clear]
+  grabber     add/add-container/clear/move-to-downloads; links [list|remove]; packages [list|remove]; jobs [list|get]; variants [list|set]
+  accounts    list/get/add/update/enable/disable/remove/refresh; hosters [list|urls]; basic-auth [list|add|update|remove]
   extraction  queue/info/settings [get|set]/start/cancel/add-password
   settings    config [...]; plugins [...]; extensions [...]
   captcha     list/get/job/solve/skip/forward [...]
   events      publishers/subscribe/set/remove/status/listen/poll
   system      info/storage/reconnect; jd [version|revision|uptime|refresh-plugins|restart|exit]; os [shutdown|hibernate|standby]; update [check|run|restart]; toggle [...]
-  advanced    content [...]; dialogs [...]; ui [...]; ingest [...]; raw request
+  advanced    content [icon|favicon|file-icon|describe]; dialogs [list|get|answer|type-info]; ingest [cnl]; raw [request]
   doctor
 ```
 
@@ -105,7 +105,7 @@ jd2
 ## Test Plan
 
 - Help and routing:
-  - `jd2 --help`, `jd2 downloads --help`, and `jd2 advanced raw request --help` show the intended task-first tree and examples.
+  - `jdr --help`, `jdr downloads --help`, and `jdr advanced raw request --help` show the intended task-first tree and examples.
 - Auth and non-interactive behavior:
   - `auth login --json` without `--password-stdin` fails with exit `2`; `auth login --password-stdin` succeeds and writes `config.json` and `keyfile.pem` in the expected locations.
 - Resolution:
@@ -119,7 +119,7 @@ jd2
 
 ## Assumptions
 
-- The executable name is `jd2`.
+- The executable name is `jdr`.
 - v1 uses My.JDownloader relay transport for normal command execution; `device direct-info` is informational only.
 - Broad coverage means first-class commands for all major capability families, not one CLI leaf per raw endpoint signature.
 - Legacy duplicate families are normalized into the canonical branches; exact legacy behavior remains reachable through `advanced raw request`.
