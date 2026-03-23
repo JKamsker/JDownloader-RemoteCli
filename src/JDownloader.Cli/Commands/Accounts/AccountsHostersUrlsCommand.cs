@@ -1,2 +1,3 @@
-using JDownloader.Cli.Runtime; using JDownloader.Cli.Transport;
+using JDownloader.Cli.Runtime;
+using JDownloader.Cli.Transport;
 namespace JDownloader.Cli.Commands.Accounts; public sealed class AccountsHostersUrlsCommand : AccountsCommandBase { public AccountsHostersUrlsCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e) { } protected override string Operation => "accounts.hosters.urls"; protected override string Endpoint => "/accountsV2/listPremiumHosterUrls"; }

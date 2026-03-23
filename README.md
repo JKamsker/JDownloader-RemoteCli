@@ -93,3 +93,11 @@ dotnet test -c Release
 dotnet run --project src/JDownloader.Cli -- doctor
 ```
 
+## Dev: formatting + hooks
+
+This repo uses `dotnet format`. To enable the committed pre-commit hook:
+
+```bash
+git config core.hooksPath .githooks
+dotnet tool restore
+```

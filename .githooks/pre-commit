@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v dotnet >/dev/null 2>&1; then
+  echo "dotnet not found; skipping dotnet format." >&2
+  exit 0
+fi
+
+echo "Running dotnet format (pre-commit)..."
+
+dotnet tool restore >/dev/null
+
+dotnet format src/JDownloader.Cli/JDownloader.Cli.csproj --verbosity minimal
+dotnet format src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verbosity minimal
+
+git add -u
+

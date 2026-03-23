@@ -34,6 +34,14 @@ jobs:
     - name: Restore
       run: dotnet restore
 
+    - name: Tool restore
+      run: dotnet tool restore
+
+    - name: Format (verify)
+      run: |
+        dotnet format src/JDownloader.Cli/JDownloader.Cli.csproj --verify-no-changes --no-restore --verbosity minimal
+        dotnet format src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verify-no-changes --no-restore --verbosity minimal
+
     - name: Build
       run: |
         dotnet build --configuration Release \

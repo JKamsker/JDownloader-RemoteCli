@@ -32,7 +32,7 @@ public sealed class RemoveProfileCommand : AnonymousCommand<RemoveProfileSetting
         var proceed = await _confirmationGuard.AuthorizeAsync(
             settings,
             $"Remove profile '{settings.Name}'?",
-            () => Task.FromResult(new CommandOutput(new { profile = settings.Name, preview = true }, [$"Would remove profile '{settings.Name}'." ])));
+            () => Task.FromResult(new CommandOutput(new { profile = settings.Name, preview = true }, [$"Would remove profile '{settings.Name}'."])));
         if (!proceed)
             return new CommandOutput(new { preview = true });
 
