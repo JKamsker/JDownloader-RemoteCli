@@ -33,7 +33,7 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
         ResolvedProfileContext? resolved = null;
         try
         {
-            resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+            resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         }
         catch
         {

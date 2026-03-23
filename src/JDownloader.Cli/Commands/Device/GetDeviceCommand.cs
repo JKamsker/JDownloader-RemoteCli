@@ -11,6 +11,8 @@ public sealed class GetDeviceCommand : DeviceApiCommand<DeviceNoArgSettings>
     {
     }
 
+    protected override bool RequireDevice => false;
+
     protected override Task<CommandOutput> ExecuteCoreAsync(CommandContext context, DeviceNoArgSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
     {
         return Task.FromResult(new CommandOutput(

@@ -29,12 +29,12 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
         var plan = CreatePlan(context, settings, resolved);
         if (plan.Destructive)
         {
-            var proceed = await _confirmationGuard.AuthorizeAsync(
-                settings,
-                $"'{context.Name}' is destructive.",
-                () => Task.FromResult(BuildPreviewOutput(resolved, plan)));
+            if (settings.DryRun)
+                return BuildPreviewOutput(resolved, plan);
+
+            var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"'{context.Name}' is destructive.");
             if (!proceed)
-                return new CommandOutput(new { preview = true });
+                return BuildPreviewOutput(resolved, plan);
         }
         else if (settings.DryRun)
         {
@@ -77,6 +77,25 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
 
     protected static Dictionary<string, object?> BuildSelectorQuery(RequestCommandSettings settings)
     {
+        var queryOverride = JsonInput.ParseOptional(settings.QueryJson);
+        if (queryOverride is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(settings.Fields)
+                || settings.Limit is not null
+                || settings.Offset is not null
+                || settings.LinkIds.Length > 0
+                || settings.PackageIds.Length > 0
+                || settings.Hosters.Length > 0)
+            {
+                throw CliException.Usage("Do not combine selector flags with --query-json. Put the full query object in --query-json or omit it.");
+            }
+
+            if (queryOverride is not Dictionary<string, object?> overrideObject)
+                throw CliException.Usage("--query-json must resolve to a JSON object for query-style endpoints.");
+
+            return overrideObject;
+        }
+
         var query = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrWhiteSpace(settings.Fields))
             query["fields"] = settings.Fields.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -90,10 +109,6 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
             query["packageIds"] = settings.PackageIds;
         if (settings.Hosters.Length > 0)
             query["hosters"] = settings.Hosters;
-
-        var queryOverride = JsonInput.ParseOptional(settings.QueryJson);
-        if (queryOverride is not null)
-            query["queryOverride"] = queryOverride;
 
         return query;
     }

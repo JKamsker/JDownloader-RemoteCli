@@ -23,7 +23,7 @@ public sealed class AuthStatusCommand : AnonymousCommand<NoArgSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var status = await _authService.GetStatusAsync(resolved.ProfileName, cancellationToken);
         return new CommandOutput(
             status,

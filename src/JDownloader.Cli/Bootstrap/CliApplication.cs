@@ -327,15 +327,9 @@ public static class CliApplication
                 dialogs.AddCommand<AdvancedDialogsAnswerCommand>("answer");
                 dialogs.AddCommand<AdvancedDialogsTypeInfoCommand>("type-info");
             });
-            advanced.AddBranch("ui", ui =>
-            {
-                ui.AddCommand<AdvancedUiRefreshCommand>("refresh");
-                ui.AddCommand<AdvancedUiFocusCommand>("focus");
-            });
             advanced.AddBranch("ingest", ingest =>
             {
                 ingest.AddCommand<AdvancedIngestCnlCommand>("cnl");
-                ingest.AddCommand<AdvancedIngestFlashCommand>("flash");
             });
             advanced.AddBranch("raw", raw =>
             {

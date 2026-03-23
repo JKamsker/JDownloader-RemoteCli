@@ -29,12 +29,13 @@ public sealed class RemoveProfileCommand : AnonymousCommand<RemoveProfileSetting
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RemoveProfileSettings settings, CancellationToken cancellationToken)
     {
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            $"Remove profile '{settings.Name}'?",
-            () => Task.FromResult(new CommandOutput(new { profile = settings.Name, preview = true }, [$"Would remove profile '{settings.Name}'."])));
+        var preview = new CommandOutput(new { profile = settings.Name, preview = true }, [$"Would remove profile '{settings.Name}'."]);
+        if (settings.DryRun)
+            return preview;
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"Remove profile '{settings.Name}'?");
         if (!proceed)
-            return new CommandOutput(new { preview = true });
+            return preview;
 
         var config = await _profileStore.LoadAsync(cancellationToken);
         if (!config.Profiles.TryGetValue(settings.Name, out var profile))

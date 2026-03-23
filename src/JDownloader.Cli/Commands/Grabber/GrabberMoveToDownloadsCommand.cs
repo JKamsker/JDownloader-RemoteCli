@@ -54,12 +54,12 @@ public sealed class GrabberMoveToDownloadsCommand : DeviceApiCommand<GrabberMove
             false,
             resolved.Device?.Id);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            "'grabber move-to-downloads' will move selected items into downloads.",
-            () => Task.FromResult(RequestPlanCommandBase.BuildPreviewOutput(resolved, plan)));
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'grabber move-to-downloads' will move selected items into downloads.");
         if (!proceed)
-            return new CommandOutput(new { preview = true });
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         if (settings.LinkIds.Length == 0 && settings.PackageIds.Length == 0)
             throw CliException.Usage("grabber move-to-downloads requires at least one --link-id <id> or --package-id <id>.");

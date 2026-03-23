@@ -21,7 +21,7 @@ public sealed record ResolvedProfileContext(
 
 public interface IProfileResolver
 {
-    Task<ResolvedProfileContext> ResolveAsync(GlobalSettings settings, bool requireDevice, CancellationToken cancellationToken);
+    Task<ResolvedProfileContext> ResolveAsync(GlobalSettings settings, bool requireDevice, bool resolveDeviceSelectors, CancellationToken cancellationToken);
 }
 
 public sealed class ProfileResolver : IProfileResolver
@@ -37,7 +37,7 @@ public sealed class ProfileResolver : IProfileResolver
         _deviceCatalog = deviceCatalog;
     }
 
-    public async Task<ResolvedProfileContext> ResolveAsync(GlobalSettings settings, bool requireDevice, CancellationToken cancellationToken)
+    public async Task<ResolvedProfileContext> ResolveAsync(GlobalSettings settings, bool requireDevice, bool resolveDeviceSelectors, CancellationToken cancellationToken)
     {
         var config = await _profileStore.LoadAsync(cancellationToken);
         var (profileName, profileSource) = ResolveProfileName(settings, config);
@@ -52,6 +52,7 @@ public sealed class ProfileResolver : IProfileResolver
             profileName,
             timeoutSeconds,
             requireDevice,
+            resolveDeviceSelectors,
             cancellationToken);
 
         return new ResolvedProfileContext(
@@ -146,13 +147,17 @@ public sealed class ProfileResolver : IProfileResolver
         string profileName,
         int timeoutSeconds,
         bool requireDevice,
+        bool resolveDeviceSelectors,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(settings.Device))
+        if (!resolveDeviceSelectors && !requireDevice)
+            return (null, null);
+
+        if (resolveDeviceSelectors && !string.IsNullOrWhiteSpace(settings.Device))
             return await ResolveExplicitDeviceAsync(profile, settings.Device, "flag", profileName, timeoutSeconds, cancellationToken);
 
         var envDevice = _environment.GetEnvironmentVariable("JD2_DEVICE");
-        if (!string.IsNullOrWhiteSpace(envDevice))
+        if (resolveDeviceSelectors && !string.IsNullOrWhiteSpace(envDevice))
             return await ResolveExplicitDeviceAsync(profile, envDevice, "env", profileName, timeoutSeconds, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(profile.DefaultDeviceId) || !string.IsNullOrWhiteSpace(profile.DefaultDeviceName))

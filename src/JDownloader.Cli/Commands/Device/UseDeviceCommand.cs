@@ -38,19 +38,40 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
         if (string.IsNullOrWhiteSpace(settings.Device))
             throw CliException.Usage("device use requires --device <id-or-name>.");
 
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+        var deviceValue = settings.Device.Trim();
+        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var config = await _profileStore.LoadAsync(cancellationToken);
-        var profile = config.Profiles[resolved.ProfileName];
 
-        var match = FindMatch(profile, settings.Device);
-        if (match is null && !string.IsNullOrWhiteSpace(profile.AccountEmail))
+        ProfileRecord profileRecord;
+        if (!config.Profiles.TryGetValue(resolved.ProfileName, out var profile) || profile is null)
+        {
+            profileRecord = new ProfileRecord();
+            config.Profiles[resolved.ProfileName] = profileRecord;
+        }
+        else
+        {
+            profileRecord = profile;
+        }
+
+        var match = FindMatch(profileRecord, deviceValue);
+        if (match is null && !string.IsNullOrWhiteSpace(profileRecord.AccountEmail))
         {
             try
             {
-                await _deviceCatalog.SyncAsync(resolved.ProfileName, profile.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
+                await _deviceCatalog.SyncAsync(resolved.ProfileName, profileRecord.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
                 config = await _profileStore.LoadAsync(cancellationToken);
-                profile = config.Profiles[resolved.ProfileName];
-                match = FindMatch(profile, settings.Device);
+
+                if (!config.Profiles.TryGetValue(resolved.ProfileName, out profile) || profile is null)
+                {
+                    profileRecord = new ProfileRecord();
+                    config.Profiles[resolved.ProfileName] = profileRecord;
+                }
+                else
+                {
+                    profileRecord = profile;
+                }
+
+                match = FindMatch(profileRecord, deviceValue);
             }
             catch (CliException ex) when (ex.Kind is "not_authenticated" or "transport")
             {
@@ -58,24 +79,29 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
             }
         }
 
+        KnownDeviceRecord selected;
         if (match is null)
         {
-            match = new KnownDeviceRecord
+            selected = new KnownDeviceRecord
             {
-                Id = settings.Device.Trim(),
-                Name = settings.DeviceName?.Trim() ?? settings.Device.Trim(),
+                Id = deviceValue,
+                Name = settings.DeviceName?.Trim() ?? deviceValue,
                 SeenAtUtc = DateTimeOffset.UtcNow,
             };
-            profile.KnownDevices.Add(match);
+            profileRecord.KnownDevices.Add(selected);
+        }
+        else
+        {
+            selected = match;
         }
 
-        profile.DefaultDeviceId = match.Id;
-        profile.DefaultDeviceName = match.Name;
+        profileRecord.DefaultDeviceId = selected.Id;
+        profileRecord.DefaultDeviceName = selected.Name;
         await _profileStore.SaveAsync(config, cancellationToken);
 
         return new CommandOutput(
-            new { profile = resolved.ProfileName, device = new { match.Id, match.Name } },
-            [$"Default device for profile '{resolved.ProfileName}' set to {match.Name} ({match.Id})."]);
+            new { profile = resolved.ProfileName, device = new { selected.Id, selected.Name } },
+            [$"Default device for profile '{resolved.ProfileName}' set to {selected.Name} ({selected.Id})."]);
     }
 
     private static KnownDeviceRecord? FindMatch(ProfileRecord profile, string lookup)

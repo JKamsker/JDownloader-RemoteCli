@@ -543,6 +543,9 @@ internal static class MyJdParameterMapper
             "/accountsV2/updateBasicAuth" => BuildBasicAuthUpdateParameters(plan.Query, out var warnings),
             "/accountsV2/setUserNameAndPassword" => BuildAccountsUpdateParameters(plan.Query, out var warnings),
             "/accountsV2/getPremiumHosterUrl" => BuildAccountsGetParameters(plan.Query, out var warnings),
+            "/accountsV2/listBasicAuth" => EnsureNoParameters(plan, "accounts basic-auth list does not accept query/body parameters."),
+            "/accountsV2/listPremiumHoster" => EnsureNoParameters(plan, "accounts hosters list does not accept query/body parameters."),
+            "/accountsV2/listPremiumHosterUrls" => EnsureNoParameters(plan, "accounts hosters urls does not accept query/body parameters."),
             "/config/get" => BuildConfigParameters(
                 plan.Query,
                 "settings config get requires --interface-name <name> --key <key>.",
@@ -579,6 +582,10 @@ internal static class MyJdParameterMapper
                 plan.Query,
                 "downloads links remove requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
+            "/downloadsV2/removePackages" => BuildLinkAndPackageIdsParameters(
+                plan.Query,
+                "downloads packages remove requires at least one --package-id <id>.",
+                out var warnings),
             "/linkgrabberv2/moveToDownloadlist" => BuildLinkAndPackageIdsParameters(
                 plan.Query,
                 "grabber move-to-downloads requires at least one --link-id <id> or --package-id <id>.",
@@ -586,6 +593,10 @@ internal static class MyJdParameterMapper
             "/linkgrabberv2/removeLinks" => BuildLinkAndPackageIdsParameters(
                 plan.Query,
                 "grabber links remove requires at least one --link-id <id> or --package-id <id>.",
+                out var warnings),
+            "/linkgrabberv2/removePackages" => BuildLinkAndPackageIdsParameters(
+                plan.Query,
+                "grabber packages remove requires at least one --package-id <id>.",
                 out var warnings),
             "/linkgrabberv2/getVariants" => BuildSingleLongParameter(
                 plan.Query,
@@ -606,6 +617,23 @@ internal static class MyJdParameterMapper
                 out var warnings),
             "/plugins/get" => BuildPluginsGetParameters(plan.Query, out var warnings),
             "/system/getStorageInfos" => BuildSystemStorageParameters(plan.Query, out var warnings),
+            "/contentV2/getIcon" => BuildContentGetIconParameters(plan.Query, out var warnings),
+            "/contentV2/getFavIcon" => BuildContentGetFavIconParameters(plan.Query, out var warnings),
+            "/contentV2/getFileIcon" => BuildContentGetFileIconParameters(plan.Query, out var warnings),
+            "/contentV2/getIconDescription" => BuildContentGetIconDescriptionParameters(plan.Query, out var warnings),
+            "/downloadcontroller/pause" => BuildSingleBooleanParameter(
+                plan.Query,
+                "value",
+                "downloads pause requires either no flags (pause) or --resume.",
+                out var warnings),
+            "/dialogs/get" => BuildDialogsGetParameters(plan.Query, out var warnings),
+            "/dialogs/getTypeInfo" => BuildSingleStringParameter(
+                plan.Query,
+                "dialogType",
+                "advanced dialogs type-info requires --dialog-type <type>.",
+                out var warnings),
+            "/dialogs/answer" => BuildDialogsAnswerParameters(plan.Query, out var warnings),
+            "/flash/add" => BuildFlashAddParameters(plan.Query, out var warnings),
             _ => BuildGenericParameters(plan),
         };
     }
@@ -629,6 +657,14 @@ internal static class MyJdParameterMapper
             return (new object?[] { plan.Body }, null);
 
         return (new object?[] { plan.Query, plan.Body }, null);
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) EnsureNoParameters(MyJdRequestPlan plan, string usageMessage)
+    {
+        if (!IsEmpty(plan.Query) || !IsEmpty(plan.Body))
+            throw CliException.Usage(usageMessage);
+
+        return (null, null);
     }
 
     private static object BuildGrabberLinksQuery(object? query, out IReadOnlyList<string>? warnings)
@@ -677,6 +713,9 @@ internal static class MyJdParameterMapper
 
         if (values.TryGetValue("queryOverride", out var queryOverride) && queryOverride is not null)
             return queryOverride;
+
+        if (!IsSelectorQuery(values))
+            return values;
 
         var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -880,6 +919,24 @@ internal static class MyJdParameterMapper
         throw CliException.Usage(usageMessage);
     }
 
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildSingleBooleanParameter(
+        object? query,
+        string key,
+        string usageMessage,
+        out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue(key, out var rawValue)
+            && rawValue is not null
+            && TryReadBool(rawValue, out var boolValue))
+        {
+            return (new object?[] { boolValue }, null);
+        }
+
+        throw CliException.Usage(usageMessage);
+    }
+
     private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildStringArrayParameters(
         object? query,
         string key,
@@ -1030,6 +1087,122 @@ internal static class MyJdParameterMapper
         throw CliException.Usage("system storage requires --path <path>.");
     }
 
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildContentGetIconParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("key", out var rawKey)
+            && values.TryGetValue("size", out var rawSize)
+            && rawKey is not null
+            && rawSize is not null
+            && !string.IsNullOrWhiteSpace(rawKey.ToString())
+            && TryReadInt(rawSize, out var size)
+            && size > 0)
+        {
+            return (new object?[] { rawKey.ToString(), size }, null);
+        }
+
+        throw CliException.Usage("advanced content icon requires --key <key> and --size <px>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildContentGetFavIconParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("hostername", out var rawHostername)
+            && rawHostername is not null
+            && !string.IsNullOrWhiteSpace(rawHostername.ToString()))
+        {
+            return (new object?[] { rawHostername.ToString() }, null);
+        }
+
+        throw CliException.Usage("advanced content favicon requires --hoster <name>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildContentGetFileIconParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("filename", out var rawFilename)
+            && rawFilename is not null
+            && !string.IsNullOrWhiteSpace(rawFilename.ToString()))
+        {
+            return (new object?[] { rawFilename.ToString() }, null);
+        }
+
+        throw CliException.Usage("advanced content file-icon requires --filename <name>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildContentGetIconDescriptionParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("key", out var rawKey)
+            && rawKey is not null
+            && !string.IsNullOrWhiteSpace(rawKey.ToString()))
+        {
+            return (new object?[] { rawKey.ToString() }, null);
+        }
+
+        throw CliException.Usage("advanced content describe requires --key <key>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildDialogsGetParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("id", out var rawId)
+            && values.TryGetValue("icon", out var rawIcon)
+            && values.TryGetValue("properties", out var rawProperties)
+            && rawId is not null
+            && rawIcon is not null
+            && rawProperties is not null
+            && TryReadLong(rawId, out var id)
+            && TryReadBool(rawIcon, out var icon)
+            && TryReadBool(rawProperties, out var properties))
+        {
+            return (new object?[] { id, icon, properties }, null);
+        }
+
+        throw CliException.Usage("advanced dialogs get requires --id <id>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildDialogsAnswerParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("id", out var rawId)
+            && values.TryGetValue("data", out var rawData)
+            && rawId is not null
+            && rawData is not null
+            && TryReadLong(rawId, out var id)
+            && rawData is Dictionary<string, object?>)
+        {
+            return (new object?[] { id, rawData }, null);
+        }
+
+        throw CliException.Usage("advanced dialogs answer requires --id <id> and --data-json <json-object-or-@file>.");
+    }
+
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildFlashAddParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("url", out var rawUrl)
+            && values.TryGetValue("source", out var rawSource)
+            && values.TryGetValue("password", out var rawPassword)
+            && rawUrl is not null
+            && rawSource is not null
+            && rawPassword is not null
+            && !string.IsNullOrWhiteSpace(rawUrl.ToString())
+            && !string.IsNullOrWhiteSpace(rawSource.ToString()))
+        {
+            return (new object?[] { rawPassword.ToString() ?? string.Empty, rawSource.ToString(), rawUrl.ToString() }, null);
+        }
+
+        throw CliException.Usage("advanced ingest cnl requires --url <url>.");
+    }
+
     private static object BuildQueryObject(
         object? query,
         Dictionary<string, object?> defaults,
@@ -1042,6 +1215,9 @@ internal static class MyJdParameterMapper
 
         if (values.TryGetValue("queryOverride", out var queryOverride) && queryOverride is not null)
             return queryOverride;
+
+        if (!IsSelectorQuery(values))
+            return values;
 
         var result = new Dictionary<string, object?>(defaults, StringComparer.OrdinalIgnoreCase);
         var localWarnings = new List<string>();
@@ -1069,6 +1245,25 @@ internal static class MyJdParameterMapper
 
         warnings = localWarnings.Count == 0 ? null : localWarnings;
         return result;
+    }
+
+    private static bool IsSelectorQuery(Dictionary<string, object?> values)
+    {
+        foreach (var key in values.Keys)
+        {
+            if (string.Equals(key, "fields", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "limit", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "offset", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "linkIds", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "packageIds", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "hosters", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, "queryOverride", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Dictionary<string, object?> CreateProjection(IEnumerable<string> fieldNames, bool includeByDefault)
@@ -1148,6 +1343,28 @@ internal static class MyJdParameterMapper
                 return true;
             default:
                 number = 0;
+                return false;
+        }
+    }
+
+    private static bool TryReadBool(object? value, out bool result)
+    {
+        switch (value)
+        {
+            case bool boolValue:
+                result = boolValue;
+                return true;
+            case string stringValue when bool.TryParse(stringValue, out var parsed):
+                result = parsed;
+                return true;
+            case int intValue when intValue is 0 or 1:
+                result = intValue == 1;
+                return true;
+            case long longValue when longValue is 0 or 1:
+                result = longValue == 1;
+                return true;
+            default:
+                result = false;
                 return false;
         }
     }

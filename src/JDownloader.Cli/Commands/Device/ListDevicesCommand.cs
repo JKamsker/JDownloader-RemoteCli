@@ -27,31 +27,45 @@ public sealed class ListDevicesCommand : AnonymousCommand<NoArgSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var warnings = new List<string>();
         var config = await _profileStore.LoadAsync(cancellationToken);
-        var profile = config.Profiles[resolved.ProfileName];
 
-        if (!string.IsNullOrWhiteSpace(profile.AccountEmail))
+        ProfileRecord profileRecord;
+        if (!config.Profiles.TryGetValue(resolved.ProfileName, out var profile) || profile is null)
+        {
+            profileRecord = new ProfileRecord();
+        }
+        else
+        {
+            profileRecord = profile;
+        }
+
+        var hasKnownDevices = profileRecord.KnownDevices.Count > 0;
+
+        if (!string.IsNullOrWhiteSpace(profileRecord.AccountEmail))
         {
             try
             {
-                await _deviceCatalog.SyncAsync(resolved.ProfileName, profile.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
+                await _deviceCatalog.SyncAsync(resolved.ProfileName, profileRecord.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
                 config = await _profileStore.LoadAsync(cancellationToken);
-                profile = config.Profiles[resolved.ProfileName];
+                if (!config.Profiles.TryGetValue(resolved.ProfileName, out profile) || profile is null)
+                    profileRecord = new ProfileRecord();
+                else
+                    profileRecord = profile;
             }
-            catch (CliException ex) when ((ex.Kind == "not_authenticated" || ex.Kind == "transport") && profile.KnownDevices.Count > 0)
+            catch (CliException ex) when ((ex.Kind == "not_authenticated" || ex.Kind == "transport") && hasKnownDevices)
             {
                 warnings.Add(ex.Message);
             }
         }
 
-        var items = profile.KnownDevices.Select(device => new
+        var items = profileRecord.KnownDevices.Select(device => new
         {
             device.Id,
             device.Name,
-            isDefault = string.Equals(profile.DefaultDeviceId, device.Id, StringComparison.Ordinal)
-                || string.Equals(profile.DefaultDeviceName, device.Name, StringComparison.OrdinalIgnoreCase),
+            isDefault = string.Equals(profileRecord.DefaultDeviceId, device.Id, StringComparison.Ordinal)
+                || string.Equals(profileRecord.DefaultDeviceName, device.Name, StringComparison.OrdinalIgnoreCase),
             device.SeenAtUtc,
         }).ToList();
 

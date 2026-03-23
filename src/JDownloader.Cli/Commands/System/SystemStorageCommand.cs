@@ -36,18 +36,20 @@ public sealed class SystemStorageCommand : DeviceApiCommand<SystemStorageSetting
         if (string.IsNullOrWhiteSpace(settings.Path))
             throw CliException.Usage("system storage requires --path <path>.");
 
-        var result = await _transport.ExecuteAsync(
-            resolved,
-            new MyJdRequestPlan(
-                "system.storage",
-                "POST",
-                "/system/getStorageInfos",
-                new Dictionary<string, object?> { ["path"] = settings.Path.Trim() },
-                null,
-                false,
-                false,
-                resolved.Device?.Id),
-            cancellationToken);
+        var plan = new MyJdRequestPlan(
+            "system.storage",
+            "POST",
+            "/system/getStorageInfos",
+            new Dictionary<string, object?> { ["path"] = settings.Path.Trim() },
+            null,
+            false,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
 
         return new CommandOutput(
             result.Data,

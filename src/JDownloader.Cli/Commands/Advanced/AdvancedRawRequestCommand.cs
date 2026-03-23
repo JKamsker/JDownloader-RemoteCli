@@ -41,12 +41,16 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RawRequestSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
     {
         var producesBinary = !string.IsNullOrWhiteSpace(settings.OutputFile);
-        if (resolved.OutputMode == OutputMode.Json && producesBinary)
-            throw CliException.Usage("Binary-producing raw requests require --output-file and do not stream raw bytes to stdout JSON.");
+
+        if (!string.IsNullOrWhiteSpace(settings.Method)
+            && !string.Equals(settings.Method.Trim(), "POST", StringComparison.OrdinalIgnoreCase))
+        {
+            throw CliException.Usage("My.JDownloader relay device calls are always POST; '--method' only supports POST.");
+        }
 
         var plan = new MyJdRequestPlan(
             "advanced.raw.request",
-            string.IsNullOrWhiteSpace(settings.Method) ? "POST" : settings.Method.Trim().ToUpperInvariant(),
+            "POST",
             settings.Path,
             JsonInput.ParseOptional(settings.QueryJson),
             JsonInput.ParseOptional(settings.BodyJson),
@@ -58,6 +62,24 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+
+        if (producesBinary)
+        {
+            var bytes = BinaryData.DecodeBytesOrThrow(result.Data, "advanced raw request");
+            BinaryData.WriteAllBytes(settings.OutputFile!, bytes);
+
+            var data = new { outputFile = Path.GetFullPath(settings.OutputFile!.Trim()), bytesWritten = bytes.Length };
+            return new CommandOutput(
+                data,
+                [
+                    $"Path: {plan.Endpoint}",
+                    $"Profile: {resolved.ProfileName}",
+                    $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
+                    $"Wrote {bytes.Length} bytes to '{data.outputFile}'.",
+                ],
+                result.Warnings);
+        }
+
         return new CommandOutput(
             result.Data,
             [

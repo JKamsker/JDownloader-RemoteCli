@@ -61,12 +61,12 @@ public sealed class ExtractionAddPasswordCommand : DeviceApiCommand<ExtractionAd
             false,
             resolved.Device?.Id);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            "'extraction add-password' will add an archive password to JDownloader.",
-            () => Task.FromResult(RequestPlanCommandBase.BuildPreviewOutput(resolved, plan)));
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'extraction add-password' will add an archive password to JDownloader.");
         if (!proceed)
-            return new CommandOutput(new { preview = true });
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

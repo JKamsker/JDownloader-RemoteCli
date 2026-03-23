@@ -68,7 +68,7 @@ public abstract class DeviceApiCommand<TSettings> : AsyncCommand<TSettings>
         ResolvedProfileContext? resolved = null;
         try
         {
-            resolved = await _profileResolver.ResolveAsync(settings, RequireDevice, cancellationToken);
+            resolved = await _profileResolver.ResolveAsync(settings, RequireDevice, resolveDeviceSelectors: true, cancellationToken);
             var output = await ExecuteCoreAsync(context, settings, resolved, cancellationToken);
             _outputRenderer.WriteSuccess(resolved, output);
             return 0;

@@ -1,0 +1,10 @@
+- [x] Implement binary response output to file (`--output-file`) for `advanced content icon|favicon|file-icon` and `advanced raw request`
+- [x] Make `advanced raw request --method` honest (either enforce POST-only or implement method semantics)
+- [x] Remove/replace novelty endpoints as first-class commands (`advanced ui focus` => `/jd/doSomethingCool`, `advanced ingest flash` => `/flashgot`) and resolve `advanced ui refresh` duplication
+- [x] Fix `grabber jobs get` endpoint (currently `/linkgrabberv2/getPackageCount`) and add a proper “get by job id” UX
+- [x] Add mapper + required-id enforcement for `downloads packages remove` (`/downloadsV2/removePackages`) and `grabber packages remove` (`/linkgrabberv2/removePackages`)
+- [x] Add mapper support (or intentionally document no-params) for accounts list endpoints: `/accountsV2/listBasicAuth`, `/accountsV2/listPremiumHoster`, `/accountsV2/listPremiumHosterUrls`
+- [x] Make `--query-json` a true override (don’t wrap as `queryOverride`) so unmapped endpoints (captcha/events/etc.) work as intended
+- [x] Fix device/profile resolution so stale `--device`/`JD2_DEVICE` doesn’t break commands that don’t need a device (`device list/use`, `auth status/whoami/logout`), and avoid crashes when a profile record doesn’t exist yet
+- [x] Make `system storage` honor `--dry-run` and reconcile docs vs behavior; address potential “double JSON envelope” preview behavior for destructive commands
+- [x] Validate: `dotnet test -c Release` + quick CLI help smoke (`dotnet run --project src/JDownloader.Cli -- --help`)

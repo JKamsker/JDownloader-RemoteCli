@@ -23,7 +23,7 @@ public sealed class LogoutCommand : AnonymousCommand<NoArgSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         await _authService.LogoutAsync(resolved.ProfileName, cancellationToken);
         return new CommandOutput(
             new { profile = resolved.ProfileName, loggedOut = true },

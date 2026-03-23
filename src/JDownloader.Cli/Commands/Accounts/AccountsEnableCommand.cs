@@ -49,12 +49,14 @@ public sealed class AccountsEnableCommand : DeviceApiCommand<AccountsEnableSetti
             false,
             resolved.Device?.Id);
 
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
         var proceed = await _confirmationGuard.AuthorizeAsync(
             settings,
-            $"'accounts enable' will enable {settings.AccountIds.Length} account(s).",
-            () => Task.FromResult(RequestPlanCommandBase.BuildPreviewOutput(resolved, plan)));
+            $"'accounts enable' will enable {settings.AccountIds.Length} account(s).");
         if (!proceed)
-            return new CommandOutput(new { preview = true });
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

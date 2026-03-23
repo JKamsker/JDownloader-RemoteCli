@@ -54,12 +54,12 @@ public sealed class ExtractionStartCommand : DeviceApiCommand<ExtractionStartSet
             false,
             resolved.Device?.Id);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
-            settings,
-            "'extraction start' will start extraction for the selected items.",
-            () => Task.FromResult(RequestPlanCommandBase.BuildPreviewOutput(resolved, plan)));
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'extraction start' will start extraction for the selected items.");
         if (!proceed)
-            return new CommandOutput(new { preview = true });
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         if (settings.LinkIds.Length == 0 && settings.PackageIds.Length == 0)
             throw CliException.Usage("extraction start requires at least one --link-id <id> or --package-id <id>.");

@@ -1,15 +1,78 @@
+using System.ComponentModel;
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
+
 namespace JDownloader.Cli.Commands.Advanced;
 
-public sealed class AdvancedIngestCnlCommand : AdvancedCommandBase
+public sealed class AdvancedIngestCnlSettings : DeviceCommandSettings
 {
-    public AdvancedIngestCnlCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    [CommandOption("--url <URL>")]
+    [Description("URL to add to Linkgrabber via the Flash/Toolbar ingest endpoint.")]
+    public string? Url { get; init; }
+
+    [CommandOption("--source <NAME>")]
+    [Description("Source label sent to the ingest endpoint.")]
+    public string Source { get; init; } = "jd2-cli";
+
+    [CommandOption("--password <PASSWORD>")]
+    [Description("Optional password passed to the ingest endpoint.")]
+    public string? Password { get; init; }
+}
+
+public sealed class AdvancedIngestCnlCommand : DeviceApiCommand<AdvancedIngestCnlSettings>
+{
+    private readonly IMyJdTransport _transport;
+    private readonly IConfirmationGuard _confirmationGuard;
+
+    public AdvancedIngestCnlCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport,
+        IConfirmationGuard confirmationGuard)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-
+        _transport = transport;
+        _confirmationGuard = confirmationGuard;
     }
-    protected override string Operation => "advanced.ingest.cnl";
-    protected override string Endpoint => "/flash/add";
-    protected override bool Destructive => true;
 
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        AdvancedIngestCnlSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Url))
+            throw CliException.Usage("advanced ingest cnl requires --url <url>.");
+
+        var plan = new MyJdRequestPlan(
+            "advanced.ingest.cnl",
+            "POST",
+            "/flash/add",
+            new Dictionary<string, object?>
+            {
+                ["password"] = settings.Password?.Trim() ?? string.Empty,
+                ["source"] = string.IsNullOrWhiteSpace(settings.Source) ? "jd2-cli" : settings.Source.Trim(),
+                ["url"] = settings.Url.Trim(),
+            },
+            null,
+            true,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'advanced ingest cnl' will add links to Linkgrabber.");
+        if (!proceed)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(
+            result.Data,
+            HumanDataRenderer.Render(result.Data),
+            result.Warnings);
+    }
 }

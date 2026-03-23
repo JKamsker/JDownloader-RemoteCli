@@ -19,7 +19,7 @@ public sealed class WhoAmICommand : AnonymousCommand<NoArgSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, cancellationToken);
+        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         return new CommandOutput(
             new
             {
