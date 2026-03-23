@@ -2,7 +2,7 @@
 
 ## Summary
 
-- Build a cross-platform `.NET 10` CLI in `src/JDownloader-2-Cli` using `Spectre.Console.Cli` and `Microsoft.Extensions.Hosting`.
+- Build a cross-platform `.NET 10` CLI in `src/` using `Spectre.Console.Cli` and `Microsoft.Extensions.Hosting`.
 - Treat this as a service-native CLI with a My.JDownloader account and device model. v1 is My.JDownloader-first and relay-backed for normal execution; there is no public direct or local transport mode in v1.
 - Ship broad first-class coverage for the major API domains, but keep the surface task-first. Use modern and v2 endpoint families as canonical and route legacy-only or oddball endpoints through `advanced raw request` unless they expose unique behavior.
 - Use a global JSON envelope v1 contract for `--json`: `ok`, `data`, `error`, `meta.schemaVersion`, `meta.warnings`, `meta.diagnosticLogPath`.
@@ -80,9 +80,9 @@ jd2
 ## Implementation Changes
 
 - Create:
-  - `src/JDownloader-2-Cli/JDownloader.Cli/`
-  - `src/JDownloader-2-Cli/JDownloader.Cli.Tests/`
-  - `src/JDownloader-2-Cli/JDownloader.Cli.sln`
+  - `src/JDownloader.Cli/`
+  - `src/JDownloader.Cli.Tests/`
+  - `JDownloader.Cli.slnx`
 - Core runtime services and interfaces:
   - `IProfileStore`, `IKeyFileProvider`, `ICredentialProtector`, `IProfileResolver`, `IDeviceResolver`
   - `IMyJdAuthService`, `IMyJdTransport`, `IRequestIdProvider`
