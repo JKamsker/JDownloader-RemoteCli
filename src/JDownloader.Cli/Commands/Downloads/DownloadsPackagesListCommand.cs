@@ -1,3 +1,14 @@
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
-namespace JDownloader.Cli.Commands.Downloads; public sealed class DownloadsPackagesListCommand : DownloadsCommandBase { public DownloadsPackagesListCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e) { } protected override string Operation => "downloads.packages.list"; protected override string Endpoint => "/downloadsV2/queryPackages"; }
+namespace JDownloader.Cli.Commands.Downloads;
+
+public sealed class DownloadsPackagesListCommand : DownloadsCommandBase
+{
+    public DownloadsPackagesListCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    {
+
+    }
+    protected override string Operation => "downloads.packages.list";
+    protected override string Endpoint => "/downloadsV2/queryPackages";
+
+}

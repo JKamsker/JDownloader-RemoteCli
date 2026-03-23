@@ -1,3 +1,14 @@
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
-namespace JDownloader.Cli.Commands.System; public sealed class SystemInfoCommand : SystemCommandBase { public SystemInfoCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e) { } protected override string Operation => "system.info"; protected override string Endpoint => "/system/getSystemInfos"; }
+namespace JDownloader.Cli.Commands.System;
+
+public sealed class SystemInfoCommand : SystemCommandBase
+{
+    public SystemInfoCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    {
+
+    }
+    protected override string Operation => "system.info";
+    protected override string Endpoint => "/system/getSystemInfos";
+
+}

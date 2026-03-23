@@ -10,8 +10,13 @@ echo "Running dotnet format (pre-commit)..."
 
 dotnet tool restore >/dev/null
 
-dotnet format src/JDownloader.Cli/JDownloader.Cli.csproj --verbosity minimal
-dotnet format src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verbosity minimal
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/format-oneline-csharp.ps1
+fi
+
+dotnet format whitespace src/JDownloader.Cli/JDownloader.Cli.csproj --verbosity minimal
+dotnet format style src/JDownloader.Cli/JDownloader.Cli.csproj --verbosity minimal
+dotnet format whitespace src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verbosity minimal
+dotnet format style src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verbosity minimal
 
 git add -u
-

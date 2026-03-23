@@ -11,5 +11,5 @@ dotnet tool restore
 
 ## pre-commit
 
-- Runs `dotnet format` and re-stages any formatting changes before allowing the commit.
-
+- Expands one-line command stubs (via `scripts/format-oneline-csharp.ps1`, when `pwsh` is available).
+- Runs `dotnet format` (whitespace + style) and re-stages any formatting changes before allowing the commit.
