@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
@@ -67,14 +66,7 @@ public sealed class SettingsExtensionsGetCommand : DeviceApiCommand<SettingsExte
         var selected = matches[0];
         return new CommandOutput(
             selected,
-            JsonSerializer.Serialize(
-                    selected,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        WriteIndented = true,
-                    })
-                .Split(Environment.NewLine),
+            HumanDataRenderer.Render(selected),
             result.Warnings);
     }
 

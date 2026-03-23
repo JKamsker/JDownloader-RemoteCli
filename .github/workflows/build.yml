@@ -1,0 +1,93 @@
+name: Build, Test, Publish
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Compute Version
+      id: version
+      run: |
+        VERSION="0.0.${{ github.run_number }}"
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Restore
+      run: dotnet restore
+
+    - name: Build
+      run: |
+        dotnet build --configuration Release \
+          /p:Version="${{ env.VERSION }}" \
+          /p:AssemblyVersion="${{ env.VERSION }}" \
+          /p:FileVersion="${{ env.VERSION }}" \
+          /p:InformationalVersion="${{ env.VERSION }}" \
+          --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Release --no-build
+
+    - name: Pack
+      run: |
+        dotnet pack src/JDownloader.Cli/JDownloader.Cli.csproj --configuration Release --no-build \
+          /p:Version="${{ env.VERSION }}" \
+          /p:AssemblyVersion="${{ env.VERSION }}" \
+          /p:FileVersion="${{ env.VERSION }}" \
+          /p:InformationalVersion="${{ env.VERSION }}" \
+          --output nuget-packages
+
+    - name: Upload NuGet Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: |
+          nuget-packages/*.nupkg
+          nuget-packages/*.snupkg
+        retention-days: 30
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Download NuGet Package
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: nuget-packages
+
+    - name: Get Secrets
+      uses: bitwarden/sm-action@v2
+      with:
+        access_token: ${{ secrets.BW_ACCESS_TOKEN }}
+        base_url: https://vault.bitwarden.eu
+        secrets: |
+          265b2fb6-2cf0-4859-9bc8-b24c00ab4378 > NUGET_API_KEY
+
+    - name: Upload to NuGet.org
+      if: github.event_name == 'push'
+      run: |
+        dotnet nuget push "nuget-packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push "nuget-packages/*.snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        echo "Upload complete"
+        echo "Version: ${{ needs.build.outputs.version }}"
+        echo "Build Number: ${{ github.run_number }}"

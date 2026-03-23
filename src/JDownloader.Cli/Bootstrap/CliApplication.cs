@@ -16,6 +16,7 @@ using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
+using System.Reflection;
 
 namespace JDownloader.Cli.Bootstrap;
 
@@ -42,8 +43,8 @@ public static class CliApplication
         var app = new CommandApp(new TypeRegistrar(services));
         app.Configure(config =>
         {
-            config.SetApplicationName("jd2");
-            config.SetApplicationVersion("0.1.0");
+            config.SetApplicationName("jdr");
+            config.SetApplicationVersion(GetVersion());
 
             RegisterAuth(config);
             RegisterDevice(config);
@@ -60,6 +61,16 @@ public static class CliApplication
         });
 
         return app;
+    }
+
+    private static string GetVersion()
+    {
+        var assembly = Assembly.GetEntryAssembly() ?? typeof(CliApplication).Assembly;
+        var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informational))
+            return informational;
+
+        return assembly.GetName().Version?.ToString() ?? "0.0.0";
     }
 
     private static void RegisterAuth(IConfigurator config)

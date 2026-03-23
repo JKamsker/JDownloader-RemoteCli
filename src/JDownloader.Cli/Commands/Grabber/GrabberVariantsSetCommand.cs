@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
@@ -68,14 +67,7 @@ public sealed class GrabberVariantsSetCommand : DeviceApiCommand<GrabberVariants
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(
             result.Data,
-            JsonSerializer.Serialize(
-                    result.Data,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        WriteIndented = true,
-                    })
-                .Split(Environment.NewLine),
+            HumanDataRenderer.Render(result.Data),
             result.Warnings);
     }
 }
