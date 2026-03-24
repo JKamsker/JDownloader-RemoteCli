@@ -83,6 +83,7 @@ Common workflow guides:
 - Devices: `docs/Common_UseCases/03_Devices.md`
 - Grabber + downloads: `docs/Common_UseCases/04_Grabber_And_Downloads.md`
 - Scripting & automation: `docs/Common_UseCases/05_Scripting_And_Automation.md`
+- Generated CLI reference: `docs/clidoc/index.md`
 
 ## Building from Source
 
