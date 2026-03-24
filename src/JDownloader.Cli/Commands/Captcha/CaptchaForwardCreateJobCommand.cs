@@ -9,19 +9,19 @@ namespace JDownloader.Cli.Commands.Captcha;
 public sealed class CaptchaForwardCreateJobSettings : DeviceCommandSettings
 {
     [CommandArgument(0, "<PARAM1>")]
-    [Description("First string parameter for /captchaforward/createJobRecaptchaV2.")]
+    [Description("First (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
     public required string Param1 { get; init; }
 
     [CommandArgument(1, "<PARAM2>")]
-    [Description("Second string parameter for /captchaforward/createJobRecaptchaV2.")]
+    [Description("Second (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
     public required string Param2 { get; init; }
 
     [CommandArgument(2, "<PARAM3>")]
-    [Description("Third string parameter for /captchaforward/createJobRecaptchaV2.")]
+    [Description("Third (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
     public required string Param3 { get; init; }
 
     [CommandArgument(3, "<PARAM4>")]
-    [Description("Fourth string parameter for /captchaforward/createJobRecaptchaV2.")]
+    [Description("Fourth (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
     public required string Param4 { get; init; }
 }
 

@@ -19,10 +19,18 @@ jdr captcha skip --id 123 --type "SKIPPED"
 
 ## Captcha forward
 
-The API accepts 4 string parameters for RecaptchaV2 job creation:
+The upstream My.JDownloader API documentation lists `createJobRecaptchaV2` as **4 unnamed string parameters**. Their meaning depends on your captcha-forward setup/provider.
+
+`jdr` passes them through unchanged **in order** as `arg1..arg4`.
 
 ```bash
 jdr captcha forward create-job <PARAM1> <PARAM2> <PARAM3> <PARAM4>
+```
+
+If you prefer explicit naming, you can use the raw escape hatch and provide `arg1..arg4` yourself:
+
+```bash
+jdr advanced raw request /captchaforward/createJobRecaptchaV2 --query-json '{"arg1":"...","arg2":"...","arg3":"...","arg4":"..."}'
 ```
 
 Fetch a forward result by job id:
@@ -30,4 +38,3 @@ Fetch a forward result by job id:
 ```bash
 jdr captcha forward get-result --job-id 123
 ```
-
