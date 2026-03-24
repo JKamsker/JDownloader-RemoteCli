@@ -13,7 +13,7 @@ public sealed record MyJdRequestPlan(
     bool ProducesBinary,
     string? DeviceId = null);
 
-public sealed record MyJdTransportResult(object Data, IReadOnlyList<string>? Warnings = null);
+public sealed record MyJdTransportResult(object? Data, IReadOnlyList<string>? Warnings = null);
 
 public interface IRequestIdProvider
 {
@@ -42,12 +42,29 @@ public static class JsonInput
         var content = raw.Trim();
         if (content.StartsWith('@'))
         {
-            var path = content[1..];
-            content = File.ReadAllText(path);
+            var path = content[1..].Trim();
+            if (string.IsNullOrWhiteSpace(path))
+                throw CliException.Usage("JSON file input requires a path after '@', for example '@request.json'.");
+
+            try
+            {
+                content = File.ReadAllText(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                throw CliException.Usage($"Could not read JSON from file '{path}': {ex.Message}");
+            }
         }
 
-        using var document = JsonDocument.Parse(content);
-        return ConvertElement(document.RootElement);
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+            return ConvertElement(document.RootElement);
+        }
+        catch (JsonException ex)
+        {
+            throw CliException.Usage($"Invalid JSON input: {ex.Message}");
+        }
     }
 
     private static object? ConvertElement(JsonElement element)

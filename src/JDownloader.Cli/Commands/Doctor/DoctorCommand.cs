@@ -31,13 +31,15 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
     {
         var config = await _profileStore.LoadAsync(cancellationToken);
         ResolvedProfileContext? resolved = null;
+        string? resolutionError = null;
         try
         {
             resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             // doctor should still print config paths even when profile resolution fails
+            resolutionError = ex.Message;
         }
 
         var data = new
@@ -51,6 +53,7 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
             resolvedProfile = resolved?.ProfileName,
             resolvedDevice = resolved?.Device is null ? null : new { resolved.Device.Id, resolved.Device.Name },
             resolvedOutputMode = resolved?.OutputMode.ToString(),
+            resolutionError,
         };
 
         return new CommandOutput(
@@ -64,6 +67,7 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
                 $"Default profile: {config.DefaultProfile ?? "(none)"}",
                 $"Resolved profile: {resolved?.ProfileName ?? "(none)"}",
                 $"Resolved device: {resolved?.Device?.DisplayValue ?? "(none)"}",
+                $"Resolve error: {resolutionError ?? "(none)"}",
             ]);
     }
 }

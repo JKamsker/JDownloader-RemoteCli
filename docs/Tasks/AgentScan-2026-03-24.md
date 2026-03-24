@@ -1,0 +1,9 @@
+- [x] Fix transport: preserve `null` response data (don’t coalesce to `Array.Empty<object>()`) so binary endpoints can error correctly (`src/JDownloader.Cli/Transport/RequestPlanning.cs`, `src/JDownloader.Cli/Transport/MyJdRelay.cs`).
+- [x] Fix transport: make `TryGetProperty` resilient to non-object JSON (avoid `InvalidOperationException`) and add any needed exception filters (`src/JDownloader.Cli/Transport/MyJdRelay.cs`).
+- [x] Improve JSON input: trim `@file` paths and wrap file/JSON parse failures as `CliException.Usage` with actionable messages (`src/JDownloader.Cli/Transport/RequestPlanning.cs`).
+- [x] Improve `captcha forward create-job` UX: replace `<ARG1..4>` placeholders with named parameters + better help text; keep API parameter order stable (`src/JDownloader.Cli/Commands/Captcha/CaptchaForwardCreateJobCommand.cs`).
+- [x] Resolve routing ambiguity: add a properly-named premium-hoster URL command under `accounts hosters` and clarify/keep `accounts get` as legacy (`src/JDownloader.Cli/Bootstrap/CliApplication.cs`, `src/JDownloader.Cli/Commands/Accounts/*`).
+- [x] Remove/clarify redundant `events poll` (docs list only `/events/listen`) (`src/JDownloader.Cli/Bootstrap/CliApplication.cs`, `src/JDownloader.Cli/Commands/Events/*`).
+- [x] (Nice-to-have) Add leaf command descriptions so `--help` is useful for subcommands (`src/JDownloader.Cli/Bootstrap/CliApplication.cs`).
+- [x] (Docs) Add minimal workflow docs pages + index entries for `accounts`, `captcha`, `events`, `extraction`, `settings`, `system` (`docs/README.md`, `docs/Common_UseCases/*`).
+- [x] (Tooling) Make `.githooks/pre-commit` behavior explicit when `dotnet` is missing; tighten quoting/working directory (`.githooks/pre-commit`).

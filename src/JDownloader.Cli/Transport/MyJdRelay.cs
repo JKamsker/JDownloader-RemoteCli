@@ -109,7 +109,7 @@ public sealed class LiveMyJdTransport : IMyJdTransport
     {
         var (parameters, warnings) = MyJdParameterMapper.Build(plan);
         var data = await _relayClient.InvokeAsync(resolved, plan.Endpoint, parameters, cancellationToken);
-        return new MyJdTransportResult(data ?? Array.Empty<object>(), warnings);
+        return new MyJdTransportResult(data, warnings);
     }
 }
 
@@ -181,7 +181,7 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
         {
             throw;
         }
-        catch (Exception ex) when (ex is HttpRequestException or CryptographicException or JsonException or FormatException)
+        catch (Exception ex) when (ex is HttpRequestException or CryptographicException or JsonException or FormatException or InvalidOperationException)
         {
             throw CliException.Transport($"My.JDownloader device discovery failed: {ex.Message}");
         }
@@ -208,7 +208,7 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
         {
             throw;
         }
-        catch (Exception ex) when (ex is HttpRequestException or CryptographicException or JsonException or FormatException)
+        catch (Exception ex) when (ex is HttpRequestException or CryptographicException or JsonException or FormatException or InvalidOperationException)
         {
             throw CliException.Transport($"My.JDownloader relay call failed: {ex.Message}");
         }
@@ -392,6 +392,12 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
 
     private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement property)
     {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            property = default;
+            return false;
+        }
+
         foreach (var candidate in element.EnumerateObject())
         {
             if (string.Equals(candidate.Name, propertyName, StringComparison.OrdinalIgnoreCase))
@@ -507,8 +513,8 @@ internal static class MyJdParameterMapper
             "/linkgrabberv2/queryLinkCrawlerJobs" => BuildJsonStringParameter(
                 BuildGrabberJobsQuery(EnsureNoBody(plan, "grabber jobs list does not accept --body-json."), out var warnings),
                 warnings),
-            "/linkgrabberv2/addLinks" => BuildGrabberAddLinksParameters(plan.Query, out var warnings),
-            "/linkgrabberv2/addContainer" => BuildGrabberAddContainerParameters(plan.Query, out var warnings),
+            "/linkgrabberv2/addLinks" => BuildGrabberAddLinksParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/linkgrabberv2/addContainer" => BuildGrabberAddContainerParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/downloadsV2/queryLinks" => BuildJsonStringParameter(
                 BuildDownloadsLinksQuery(EnsureNoBody(plan, "downloads links list does not accept --body-json."), out var warnings),
                 warnings),
@@ -540,141 +546,141 @@ internal static class MyJdParameterMapper
             "/toolbar/togglePremium" => EnsureNoParameters(plan, "system toggle premium does not accept query/body parameters."),
             "/toolbar/toggleStopAfterCurrentDownload" => EnsureNoParameters(plan, "system toggle stop-after-current does not accept query/body parameters."),
             "/accountsV2/disableAccounts" => BuildLongArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 ["accountIds", "ids"],
                 "accounts disable requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/enableAccounts" => BuildLongArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 ["accountIds", "ids"],
                 "accounts enable requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/refreshAccounts" => BuildLongArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 ["accountIds", "ids"],
                 "accounts refresh requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/removeAccounts" => BuildLongArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 ["accountIds", "ids"],
                 "accounts remove requires at least one --account-id <id>.",
                 out var warnings),
             "/accountsV2/removeBasicAuths" => BuildLongArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 ["basicAuthIds", "ids"],
                 "accounts basic-auth remove requires at least one --basic-auth-id <id>.",
                 out var warnings),
-            "/accountsV2/addAccount" => BuildAccountsAddParameters(plan.Query, out var warnings),
-            "/accountsV2/addBasicAuth" => BuildBasicAuthAddParameters(plan.Query, out var warnings),
-            "/accountsV2/updateBasicAuth" => BuildBasicAuthUpdateParameters(plan.Query, out var warnings),
-            "/accountsV2/setUserNameAndPassword" => BuildAccountsUpdateParameters(plan.Query, out var warnings),
-            "/accountsV2/getPremiumHosterUrl" => BuildAccountsGetParameters(plan.Query, out var warnings),
+            "/accountsV2/addAccount" => BuildAccountsAddParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/accountsV2/addBasicAuth" => BuildBasicAuthAddParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/accountsV2/updateBasicAuth" => BuildBasicAuthUpdateParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/accountsV2/setUserNameAndPassword" => BuildAccountsUpdateParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/accountsV2/getPremiumHosterUrl" => BuildAccountsGetParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/accountsV2/listBasicAuth" => EnsureNoParameters(plan, "accounts basic-auth list does not accept query/body parameters."),
             "/accountsV2/listPremiumHoster" => EnsureNoParameters(plan, "accounts hosters list does not accept query/body parameters."),
             "/accountsV2/listPremiumHosterUrls" => EnsureNoParameters(plan, "accounts hosters urls does not accept query/body parameters."),
-            "/captcha/get" => BuildCaptchaGetParameters(plan.Query, out var warnings),
-            "/captcha/getCaptchaJob" => BuildCaptchaJobParameters(plan.Query, out var warnings),
+            "/captcha/get" => BuildCaptchaGetParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/captcha/getCaptchaJob" => BuildCaptchaJobParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/captcha/list" => EnsureNoParameters(plan, "captcha list does not accept query/body parameters."),
-            "/captcha/skip" => BuildCaptchaSkipParameters(plan.Query, out var warnings),
-            "/captcha/solve" => BuildCaptchaSolveParameters(plan.Query, out var warnings),
-            "/captchaforward/createJobRecaptchaV2" => BuildCaptchaForwardCreateJobParameters(plan.Query, out var warnings),
-            "/captchaforward/getResult" => BuildCaptchaForwardGetResultParameters(plan.Query, out var warnings),
+            "/captcha/skip" => BuildCaptchaSkipParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/captcha/solve" => BuildCaptchaSolveParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/captchaforward/createJobRecaptchaV2" => BuildCaptchaForwardCreateJobParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/captchaforward/getResult" => BuildCaptchaForwardGetResultParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/config/get" => BuildConfigParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "settings config get requires --interface-name <name> --key <key>.",
                 out var warnings),
-            "/config/list" => BuildConfigListParameters(plan.Query, out var warnings),
+            "/config/list" => BuildConfigListParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/config/reset" => BuildConfigParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "settings config reset requires --interface-name <name> --key <key>.",
                 out var warnings),
-            "/config/set" => BuildConfigSetParameters(plan.Query, out var warnings),
+            "/config/set" => BuildConfigSetParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/extraction/addArchivePassword" => BuildSingleStringParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "password",
                 "extraction add-password requires exactly one of --password <password> or --password-stdin.",
                 out var warnings),
             "/extraction/startExtractionNow" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "extraction start requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
             "/extraction/cancelExtraction" => BuildSingleLongParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "controllerId",
                 "extraction cancel requires --controller-id <id>.",
                 out var warnings),
             "/extraction/getArchiveSettings" => BuildStringArrayParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "archiveIds",
                 "extraction settings get requires at least one --archive-id <id>.",
                 out var warnings),
-            "/extraction/setArchiveSettings" => BuildExtractionSetArchiveSettingsParameters(plan.Query, out var warnings),
+            "/extraction/setArchiveSettings" => BuildExtractionSetArchiveSettingsParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/extraction/getArchiveInfo" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "extraction info requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
             "/downloadsV2/removeLinks" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "downloads links remove requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
             "/linkgrabberv2/moveToDownloadlist" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "grabber move-to-downloads requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
             "/linkgrabberv2/removeLinks" => BuildLinkAndPackageIdsParameters(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "grabber links remove requires at least one --link-id <id> or --package-id <id>.",
                 out var warnings),
             "/linkgrabberv2/getVariants" => BuildSingleLongParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "linkId",
                 "grabber variants list requires --link-id <id>.",
                 out var warnings),
-            "/linkgrabberv2/setVariant" => BuildGrabberSetVariantParameters(plan.Query, out var warnings),
-            "/downloadsV2/setStopMark" => BuildDownloadsStopMarkParameters(plan.Query, out var warnings),
+            "/linkgrabberv2/setVariant" => BuildGrabberSetVariantParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/downloadsV2/setStopMark" => BuildDownloadsStopMarkParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/downloadsV2/removeStopMark" => EnsureNoParameters(plan, "downloads stopmark clear does not accept query/body parameters."),
             "/extensions/install" => BuildSingleStringParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "id",
                 "settings extensions install requires --id <id>.",
                 out var warnings),
-            "/extensions/setEnabled" => BuildExtensionsSetEnabledParameters(plan.Query, out var warnings),
-            "/plugins/get" => BuildPluginsGetParameters(plan.Query, out var warnings),
-            "/system/getStorageInfos" => BuildSystemStorageParameters(plan.Query, out var warnings),
+            "/extensions/setEnabled" => BuildExtensionsSetEnabledParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/plugins/get" => BuildPluginsGetParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/system/getStorageInfos" => BuildSystemStorageParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/system/getSystemInfos" => EnsureNoParameters(plan, "system info does not accept query/body parameters."),
             "/system/shutdownOS" => BuildSingleBooleanParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "force",
                 "system os shutdown requires --force (or omit it to send force=false).",
                 out var warnings),
             "/system/hibernateOS" => EnsureNoParameters(plan, "system os hibernate does not accept query/body parameters."),
             "/system/standbyOS" => EnsureNoParameters(plan, "system os standby does not accept query/body parameters."),
             "/reconnect/doReconnect" => EnsureNoParameters(plan, "system reconnect does not accept query/body parameters."),
-            "/contentV2/getIcon" => BuildContentGetIconParameters(plan.Query, out var warnings),
-            "/contentV2/getFavIcon" => BuildContentGetFavIconParameters(plan.Query, out var warnings),
-            "/contentV2/getFileIcon" => BuildContentGetFileIconParameters(plan.Query, out var warnings),
-            "/contentV2/getIconDescription" => BuildContentGetIconDescriptionParameters(plan.Query, out var warnings),
+            "/contentV2/getIcon" => BuildContentGetIconParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/contentV2/getFavIcon" => BuildContentGetFavIconParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/contentV2/getFileIcon" => BuildContentGetFileIconParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/contentV2/getIconDescription" => BuildContentGetIconDescriptionParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/downloadcontroller/pause" => BuildSingleBooleanParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "value",
                 "downloads pause requires either no flags (pause) or --resume.",
                 out var warnings),
             "/downloadsV2/getStopMark" => EnsureNoParameters(plan, "downloads stopmark get does not accept query/body parameters."),
-            "/events/listen" => BuildEventsListenParameters(plan.Query, out var warnings),
-            "/events/getsubscriptionstatus" => BuildEventsSubscriptionStatusParameters(plan.Query, out var warnings),
+            "/events/listen" => BuildEventsListenParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/events/getsubscriptionstatus" => BuildEventsSubscriptionStatusParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/events/listpublisher" => EnsureNoParameters(plan, "events publishers does not accept query/body parameters."),
-            "/events/subscribe" => BuildEventsSubscribeParameters(plan.Query, out var warnings),
-            "/events/setsubscription" => BuildEventsSetSubscriptionParameters(plan.Query, out var warnings),
-            "/events/removesubscription" => BuildEventsRemoveSubscriptionParameters(plan.Query, out var warnings),
-            "/dialogs/get" => BuildDialogsGetParameters(plan.Query, out var warnings),
+            "/events/subscribe" => BuildEventsSubscribeParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/events/setsubscription" => BuildEventsSetSubscriptionParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/events/removesubscription" => BuildEventsRemoveSubscriptionParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/dialogs/get" => BuildDialogsGetParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/dialogs/list" => EnsureNoParameters(plan, "advanced dialogs list does not accept query/body parameters."),
             "/dialogs/getTypeInfo" => BuildSingleStringParameter(
-                plan.Query,
+                EnsureNoBodyForMappedEndpoint(plan),
                 "dialogType",
                 "advanced dialogs type-info requires --dialog-type <type>.",
                 out var warnings),
-            "/dialogs/answer" => BuildDialogsAnswerParameters(plan.Query, out var warnings),
-            "/flash/add" => BuildFlashAddParameters(plan.Query, out var warnings),
+            "/dialogs/answer" => BuildDialogsAnswerParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
+            "/flash/add" => BuildFlashAddParameters(EnsureNoBodyForMappedEndpoint(plan), out var warnings),
             "/extraction/getQueue" => EnsureNoParameters(plan, "extraction queue does not accept query/body parameters."),
             "/jd/version" => EnsureNoParameters(plan, "system jd version does not accept query/body parameters."),
             "/jd/getCoreRevision" => EnsureNoParameters(plan, "system jd revision does not accept query/body parameters."),
@@ -771,16 +777,30 @@ internal static class MyJdParameterMapper
             ["collectorInfo"] = true,
         };
 
-        if (values.TryGetValue("packageIds", out var packageIds) && TryReadLongArray(packageIds, out var jobIds))
-            result["jobIds"] = jobIds;
-
         var localWarnings = new List<string>();
+
+        if (values.TryGetValue("limit", out var limit) && TryReadInt(limit, out var maxResults))
+            result["maxResults"] = maxResults;
+
+        if (values.TryGetValue("offset", out var offset) && TryReadInt(offset, out var startAt))
+            result["startAt"] = startAt;
+
+        if (values.TryGetValue("jobIds", out var jobIds) && TryReadLongArray(jobIds, out var parsedJobIds))
+        {
+            result["jobIds"] = parsedJobIds;
+        }
+        else if (values.TryGetValue("packageIds", out var legacyJobIds) && TryReadLongArray(legacyJobIds, out parsedJobIds))
+        {
+            result["jobIds"] = parsedJobIds;
+            localWarnings.Add("Selector key 'packageIds' is deprecated for grabber jobs list. Use 'jobIds'.");
+        }
+
         if (values.TryGetValue("fields", out var fields) && ToStringList(fields).Count > 0)
-            localWarnings.Add("The current live mapper does not translate --fields for grabber jobs list.");
+            throw CliException.Usage("grabber jobs list does not support --fields.");
         if (values.TryGetValue("linkIds", out var linkIds) && !IsEmpty(linkIds))
-            localWarnings.Add("The current live mapper does not translate --link-id for grabber jobs list.");
+            throw CliException.Usage("grabber jobs list does not support --link-id.");
         if (values.TryGetValue("hosters", out var hosters) && !IsEmpty(hosters))
-            localWarnings.Add("The current live mapper does not translate --hoster for grabber jobs list.");
+            throw CliException.Usage("grabber jobs list does not support --hoster.");
 
         warnings = localWarnings.Count == 0 ? null : localWarnings;
         return result;
@@ -1346,6 +1366,11 @@ internal static class MyJdParameterMapper
             throw CliException.Usage(usageMessage);
 
         return plan.Query;
+    }
+
+    private static object? EnsureNoBodyForMappedEndpoint(MyJdRequestPlan plan)
+    {
+        return EnsureNoBody(plan, $"Endpoint '{plan.Endpoint}' does not accept --body-json.");
     }
 
     private static bool TryGetLong(Dictionary<string, object?> values, string[] keys, out long longValue)

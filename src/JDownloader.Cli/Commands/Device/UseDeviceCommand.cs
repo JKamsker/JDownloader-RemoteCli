@@ -40,6 +40,7 @@ public sealed class UseDeviceCommand : ProfileApiCommand<UseDeviceSettings>
         if (string.IsNullOrWhiteSpace(settings.Device))
             throw CliException.Usage("device use requires --device <id-or-name>.");
 
+        var warnings = new List<string>();
         var deviceValue = settings.Device.Trim();
         var config = await _profileStore.LoadAsync(cancellationToken);
 
@@ -100,6 +101,7 @@ public sealed class UseDeviceCommand : ProfileApiCommand<UseDeviceSettings>
             catch (CliException ex) when (ex.Kind is "not_authenticated" or "transport")
             {
                 // keep the original ergonomic fallback and let the caller opt into a manual record
+                warnings.Add($"Live device sync failed: {ex.Message}");
             }
         }
 
@@ -135,14 +137,16 @@ public sealed class UseDeviceCommand : ProfileApiCommand<UseDeviceSettings>
                     "Dry-run only. No changes were applied.",
                     $"Profile: {resolved.ProfileName}",
                     $"Would set default device to {selected.Name} ({selected.Id}).",
-                ]);
+                ],
+                warnings.Count == 0 ? null : warnings);
         }
 
         await _profileStore.SaveAsync(config, cancellationToken);
 
         return new CommandOutput(
             new { profile = resolved.ProfileName, device = new { selected.Id, selected.Name } },
-            [$"Default device for profile '{resolved.ProfileName}' set to {selected.Name} ({selected.Id})."]);
+            [$"Default device for profile '{resolved.ProfileName}' set to {selected.Name} ({selected.Id})."],
+            warnings.Count == 0 ? null : warnings);
     }
 
     private static KnownDeviceRecord? FindMatch(ProfileRecord profile, string lookup, string source)

@@ -7,6 +7,11 @@ Common workflow guides:
 - Devices: `Common_UseCases/03_Devices.md`
 - Grabber + downloads: `Common_UseCases/04_Grabber_And_Downloads.md`
 - Scripting & automation: `Common_UseCases/05_Scripting_And_Automation.md`
+- Accounts: `Common_UseCases/06_Accounts.md`
+- Settings (config/plugins/extensions): `Common_UseCases/07_Settings.md`
+- Extraction: `Common_UseCases/08_Extraction.md`
+- Events: `Common_UseCases/09_Events.md`
+- Captcha: `Common_UseCases/10_Captcha.md`
+- System: `Common_UseCases/11_System.md`
 
 The CLI is human-first by default; use `--json` for automation.
-
