@@ -5,20 +5,28 @@ repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 
 if command -v dotnet >/dev/null 2>&1; then
-  echo "Running dotnet format (pre-commit)..."
+  dotnet_version="$(dotnet --version 2>/dev/null || true)"
+  dotnet_major="${dotnet_version%%.*}"
 
-  dotnet tool restore >/dev/null
+  if [[ "$dotnet_major" =~ ^[0-9]+$ ]] && [[ "$dotnet_major" -ge 10 ]]; then
+    echo "Running dotnet format (pre-commit)..."
 
-  if command -v pwsh >/dev/null 2>&1; then
-    pwsh -NoProfile -ExecutionPolicy Bypass -File "scripts/format-oneline-csharp.ps1"
+    dotnet tool restore >/dev/null
+    dotnet restore --verbosity minimal >/dev/null
+
+    if command -v pwsh >/dev/null 2>&1; then
+      pwsh -NoProfile -ExecutionPolicy Bypass -File "scripts/format-oneline-csharp.ps1"
+    fi
+
+    dotnet format whitespace "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal --no-restore
+    dotnet format style "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal --no-restore
+    dotnet format whitespace "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal --no-restore
+    dotnet format style "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal --no-restore
+
+    git add -u
+  else
+    echo "dotnet SDK >= 10 not found (detected '${dotnet_version:-unknown}'); skipping dotnet format." >&2
   fi
-
-  dotnet format whitespace "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal
-  dotnet format style "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal
-  dotnet format whitespace "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal
-  dotnet format style "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal
-
-  git add -u
 else
   echo "dotnet not found; skipping dotnet format." >&2
 fi
