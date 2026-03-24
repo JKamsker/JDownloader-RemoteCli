@@ -19,7 +19,7 @@ jdr
   extraction  queue/info/settings [get|set]/start/cancel/add-password
   settings    config [...]; plugins [...]; extensions [...]
   captcha     list/get/job/solve/skip/forward [...]
-  events      publishers/subscribe/set/remove/status/listen/poll
+  events      publishers/subscribe/set/remove/status/listen
   system      info/storage/reconnect; jd [version|revision|uptime|refresh-plugins|restart|exit]; os [shutdown|hibernate|standby]; update [check|run|restart]; toggle [...]
   advanced    content [icon|favicon|file-icon|describe]; dialogs [list|get|answer|type-info]; ingest [cnl]; raw [request]
   doctor

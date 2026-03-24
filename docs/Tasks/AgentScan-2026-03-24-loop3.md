@@ -1,0 +1,2 @@
+- [x] Remove stale mentions of `events poll` (README + tasks docs).
+- [x] Remove stale mentions of `advanced ui` commands from README.

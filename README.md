@@ -52,9 +52,9 @@ jdr grabber links list --json
 | `extraction` | Inspect/control archive extraction |
 | `settings` | Config, plugins, extensions |
 | `captcha` | Captcha jobs |
-| `events` | Event subscriptions/listen/poll |
+| `events` | Event subscriptions/listen |
 | `system` | JDownloader + OS + update operations |
-| `advanced` | Expert escape hatches (raw request, UI ops, dialogs, ingest) |
+| `advanced` | Expert escape hatches (raw request, dialogs, ingest, binary content) |
 | `doctor` | Inspect config paths and resolution |
 
 Run `jdr --help` or `jdr <group> --help` for full details.
