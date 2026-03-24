@@ -2,6 +2,7 @@ using System.Reflection;
 using JDownloader.Cli.Auth;
 using JDownloader.Cli.Commands.Doctor;
 using JDownloader.Cli.Config;
+using JDownloader.Cli.Documentation;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,6 +49,7 @@ public static class CliApplication
             config.RegisterSystemCommands();
             config.RegisterAdvancedCommands();
             config.AddCommand<DoctorCommand>("doctor").WithDescription("Inspect config paths, resolution, and stored auth state.");
+            config.AddDocumentationExamples();
         });
 
         return app;
