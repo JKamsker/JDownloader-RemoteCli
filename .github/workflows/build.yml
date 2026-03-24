@@ -3,9 +3,20 @@ name: Build, Test, Publish
 on:
   push:
     branches: [ "main", "master" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the built package to NuGet.org
+        required: false
+        default: false
+        type: boolean
+      release_version:
+        description: Release version for manual publish runs
+        required: false
+        type: string
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -22,12 +33,26 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 10.0.x
+        global-json-file: global.json
 
     - name: Compute Version
       id: version
       run: |
-        VERSION="0.0.${{ github.run_number }}"
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.publish }}" == "true" && -z "${{ inputs.release_version }}" ]]; then
+          echo "release_version is required when publish=true." >&2
+          exit 1
+        fi
+
+        BASE_VERSION="$(dotnet msbuild src/JDownloader.Cli/JDownloader.Cli.csproj -nologo -getProperty:VersionPrefix)"
+
+        if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          VERSION="${GITHUB_REF_NAME#v}"
+        elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.release_version }}" ]]; then
+          VERSION="${{ inputs.release_version }}"
+        else
+          VERSION="${BASE_VERSION}-ci.${{ github.run_number }}"
+        fi
+
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -74,12 +99,14 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)
     steps:
+    - uses: actions/checkout@v4
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 10.0.x
+        global-json-file: global.json
 
     - name: Download NuGet Package
       uses: actions/download-artifact@v4
@@ -96,7 +123,6 @@ jobs:
           265b2fb6-2cf0-4859-9bc8-b24c00ab4378 > NUGET_API_KEY
 
     - name: Upload to NuGet.org
-      if: github.event_name == 'push'
       run: |
         shopt -s nullglob
         for package in nuget-packages/*.nupkg; do

@@ -11,7 +11,8 @@ public sealed record MyJdRequestPlan(
     object? Body,
     bool Destructive,
     bool ProducesBinary,
-    string? DeviceId = null);
+    string? DeviceId = null,
+    bool PreserveRawParameters = false);
 
 public sealed record MyJdTransportResult(object? Data, IReadOnlyList<string>? Warnings = null);
 

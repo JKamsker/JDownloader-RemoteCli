@@ -7,7 +7,8 @@ Settings are exposed via three command families: `settings config`, `settings pl
 List interface keys:
 
 ```bash
-jdr settings config list --interface-name "org.jdownloader.settings.GeneralSettings"
+jdr settings config list
+jdr settings config list --pattern "GeneralSettings" --return-description
 ```
 
 Get/set/reset a key:

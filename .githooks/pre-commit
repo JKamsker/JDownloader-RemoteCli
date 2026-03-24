@@ -4,27 +4,51 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 
+mapfile -t staged_cs_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.cs')
+
+run_dotnet_format() {
+  local project="$1"
+  shift
+  local files=("$@")
+
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    return
+  fi
+
+  dotnet format whitespace "$project" --verbosity minimal --no-restore --include "${files[@]}"
+  dotnet format style "$project" --verbosity minimal --no-restore --include "${files[@]}"
+}
+
 if command -v dotnet >/dev/null 2>&1; then
   dotnet_version="$(dotnet --version 2>/dev/null || true)"
   dotnet_major="${dotnet_version%%.*}"
 
   if [[ "$dotnet_major" =~ ^[0-9]+$ ]] && [[ "$dotnet_major" -ge 10 ]]; then
-    echo "Running dotnet format (pre-commit)..."
+    if [[ "${#staged_cs_files[@]}" -gt 0 ]]; then
+      echo "Running dotnet format on staged C# files (pre-commit)..."
 
-    dotnet restore --verbosity minimal >/dev/null
+      dotnet restore --verbosity minimal >/dev/null
 
-    if command -v pwsh >/dev/null 2>&1; then
-      pwsh -NoProfile -ExecutionPolicy Bypass -File "scripts/format-oneline-csharp.ps1"
-    else
-      echo "pwsh not found; skipping scripts/format-oneline-csharp.ps1." >&2
+      if command -v pwsh >/dev/null 2>&1; then
+        pwsh -NoProfile -ExecutionPolicy Bypass -File "scripts/format-oneline-csharp.ps1" -Paths "${staged_cs_files[@]}"
+      else
+        echo "pwsh not found; skipping scripts/format-oneline-csharp.ps1." >&2
+      fi
+
+      cli_cs_files=()
+      test_cs_files=()
+      for file in "${staged_cs_files[@]}"; do
+        case "$file" in
+          src/JDownloader.Cli/*) cli_cs_files+=("$file") ;;
+          src/JDownloader.Cli.Tests/*) test_cs_files+=("$file") ;;
+        esac
+      done
+
+      run_dotnet_format "src/JDownloader.Cli/JDownloader.Cli.csproj" "${cli_cs_files[@]}"
+      run_dotnet_format "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" "${test_cs_files[@]}"
+
+      git add -- "${staged_cs_files[@]}"
     fi
-
-    dotnet format whitespace "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal --no-restore
-    dotnet format style "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal --no-restore
-    dotnet format whitespace "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal --no-restore
-    dotnet format style "src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj" --verbosity minimal --no-restore
-
-    git add -u
   else
     echo "dotnet SDK >= 10 not found (detected '${dotnet_version:-unknown}'); skipping dotnet format." >&2
   fi

@@ -10,7 +10,7 @@ public sealed class OutputRenderer : IOutputRenderer
         WriteIndented = true,
     };
 
-    public void WriteSuccess(ResolvedProfileContext resolved, CommandOutput output)
+    public void WriteSuccess(ResolvedProfileContext resolved, CommandOutput output, bool quiet)
     {
         if (resolved.OutputMode == OutputMode.Json)
         {
@@ -22,10 +22,10 @@ public sealed class OutputRenderer : IOutputRenderer
             return;
         }
 
-        WriteHuman(output);
+        WriteHuman(output, quiet);
     }
 
-    public void WriteAnonymousSuccess(OutputMode mode, CommandOutput output)
+    public void WriteAnonymousSuccess(OutputMode mode, CommandOutput output, bool quiet)
     {
         if (mode == OutputMode.Json)
         {
@@ -37,7 +37,7 @@ public sealed class OutputRenderer : IOutputRenderer
             return;
         }
 
-        WriteHuman(output);
+        WriteHuman(output, quiet);
     }
 
     public void WriteFailure(OutputMode mode, CliException exception, string? diagnosticLogPath, bool verbose, bool quiet)
@@ -74,11 +74,11 @@ public sealed class OutputRenderer : IOutputRenderer
         Console.Error.WriteLine("Unexpected client error.");
         if (verbose)
             Console.Error.WriteLine(exception.Message);
-        if (!quiet && !string.IsNullOrWhiteSpace(diagnosticLogPath))
+        if (verbose && !quiet && !string.IsNullOrWhiteSpace(diagnosticLogPath))
             Console.Error.WriteLine($"Diagnostic log saved to: {diagnosticLogPath}");
     }
 
-    private static void WriteHuman(CommandOutput output)
+    private static void WriteHuman(CommandOutput output, bool quiet)
     {
         if (output.HumanLines is not null)
         {
@@ -86,7 +86,7 @@ public sealed class OutputRenderer : IOutputRenderer
                 Console.Out.WriteLine(line);
         }
 
-        if (output.Warnings is not null)
+        if (!quiet && output.Warnings is not null)
         {
             foreach (var warning in output.Warnings)
                 Console.Error.WriteLine($"Warning: {warning}");

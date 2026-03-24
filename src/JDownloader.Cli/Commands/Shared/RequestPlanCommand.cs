@@ -6,8 +6,9 @@ namespace JDownloader.Cli.Commands.Shared;
 
 public static class RequestPlanCommandBase
 {
-    public static CommandOutput BuildPreviewOutput(ResolvedProfileContext resolved, MyJdRequestPlan plan)
+    public static CommandOutput BuildPreviewOutput(ResolvedProfileContext resolved, MyJdRequestPlan plan, string? outputFile = null)
     {
+        var (_, warnings) = MyJdParameterPreparation.Prepare(plan);
         var data = new
         {
             action = "dry-run",
@@ -20,14 +21,16 @@ public static class RequestPlanCommandBase
             plan.Body,
             plan.Destructive,
             plan.ProducesBinary,
+            outputFile = string.IsNullOrWhiteSpace(outputFile) ? null : Path.GetFullPath(outputFile.Trim()),
         };
 
         return new CommandOutput(
             data,
-            BuildHumanLines(resolved, plan));
+            BuildHumanLines(resolved, plan, data.outputFile),
+            warnings);
     }
 
-    private static IReadOnlyList<string> BuildHumanLines(ResolvedProfileContext resolved, MyJdRequestPlan plan)
+    private static IReadOnlyList<string> BuildHumanLines(ResolvedProfileContext resolved, MyJdRequestPlan plan, string? outputFile)
     {
         var lines = new List<string>
         {
@@ -36,7 +39,12 @@ public static class RequestPlanCommandBase
                 $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
                 $"Method: {plan.Method}",
                 $"Endpoint: {plan.Endpoint}",
+                $"Destructive: {(plan.Destructive ? "yes" : "no")}",
+                $"Binary response: {(plan.ProducesBinary ? "yes" : "no")}",
             };
+
+        if (!string.IsNullOrWhiteSpace(outputFile))
+            lines.Add($"Output file: {outputFile}");
 
         AppendSection(lines, "Query", plan.Query);
         AppendSection(lines, "Body", plan.Body);

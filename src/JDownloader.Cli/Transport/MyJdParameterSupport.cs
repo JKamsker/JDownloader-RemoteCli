@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text.Json;
 using JDownloader.Cli.Runtime;
 
@@ -12,6 +13,20 @@ internal static class MyJdParameterSupport
         return (new object?[] { JsonSerializer.Serialize(queryObject) }, warnings);
     }
 
+    public static (object? Parameters, IReadOnlyList<string>? Warnings) BuildRawParameters(MyJdRequestPlan plan)
+    {
+        var queryIsEmpty = MyJdValueReaders.IsEmpty(plan.Query);
+        var bodyIsEmpty = MyJdValueReaders.IsEmpty(plan.Body);
+        if (queryIsEmpty && bodyIsEmpty)
+            return (null, null);
+        if (bodyIsEmpty)
+            return (WrapSingleParameter(plan.Query), null);
+        if (queryIsEmpty)
+            return (WrapSingleParameter(plan.Body), null);
+
+        return (new object?[] { plan.Query, plan.Body }, null);
+    }
+
     public static (object? Parameters, IReadOnlyList<string>? Warnings) BuildGenericParameters(MyJdRequestPlan plan)
     {
         var queryIsEmpty = MyJdValueReaders.IsEmpty(plan.Query);
@@ -24,6 +39,20 @@ internal static class MyJdParameterSupport
             return (new object?[] { plan.Body }, null);
 
         return (new object?[] { plan.Query, plan.Body }, null);
+    }
+
+    private static object? WrapSingleParameter(object? value)
+    {
+        if (value is null)
+            return null;
+        if (value is IEnumerable sequence
+            && value is not string
+            && value is not Dictionary<string, object?>)
+        {
+            return sequence;
+        }
+
+        return new object?[] { value };
     }
 
     public static (object? Parameters, IReadOnlyList<string>? Warnings) EnsureNoParameters(MyJdRequestPlan plan, string usageMessage)

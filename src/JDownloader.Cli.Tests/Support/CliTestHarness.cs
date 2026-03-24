@@ -1,6 +1,7 @@
 using System.Text.Json;
 using JDownloader.Cli.Bootstrap;
 using JDownloader.Cli.Config;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace JDownloader.Cli.Tests.Support;
 
@@ -8,9 +9,13 @@ internal static class CliTestHarness
 {
     public sealed record CommandRunResult(int ExitCode, string StdOut, string StdErr);
 
-    public static async Task<CommandRunResult> RunAsync(FakeCliEnvironment environment, string[] args, string input = "")
+    public static async Task<CommandRunResult> RunAsync(
+        FakeCliEnvironment environment,
+        string[] args,
+        string input = "",
+        Action<IServiceCollection>? configureServices = null)
     {
-        var app = CliApplication.Create(environment);
+        var app = CliApplication.Create(environment, configureServices);
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var stdin = new StringReader(input);

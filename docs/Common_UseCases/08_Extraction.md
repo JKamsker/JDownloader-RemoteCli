@@ -25,6 +25,6 @@ jdr extraction add-password --password-stdin
 ## Settings
 
 ```bash
-jdr extraction settings get
+jdr extraction settings get --archive-id "some-archive-id"
 jdr extraction settings set --archive-id "some-archive-id" --settings-json '{"someSetting":true}'
 ```

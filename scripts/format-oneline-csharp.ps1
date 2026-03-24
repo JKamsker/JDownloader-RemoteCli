@@ -1,3 +1,7 @@
+param(
+    [string[]] $Paths = @()
+)
+
 $ErrorActionPreference = "Stop"
 
 function Should-ReformatFile([string] $content) {
@@ -165,8 +169,18 @@ function Expand-CSharp([string] $content) {
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $targets =
-    Get-ChildItem -Path (Join-Path $repoRoot "src") -Recurse -File -Filter "*.cs" |
-    Where-Object { $_.FullName -notmatch "\\\\(bin|obj)\\\\" }
+    if ($Paths.Count -gt 0) {
+        $Paths |
+        Where-Object { $_ -like "*.cs" } |
+        ForEach-Object { Join-Path $repoRoot $_ } |
+        Where-Object { (Test-Path $_ -PathType Leaf) -and ($_ -notmatch "\\\\(bin|obj)\\\\") } |
+        ForEach-Object { Get-Item $_ } |
+        Sort-Object FullName -Unique
+    }
+    else {
+        Get-ChildItem -Path (Join-Path $repoRoot "src") -Recurse -File -Filter "*.cs" |
+        Where-Object { $_.FullName -notmatch "\\\\(bin|obj)\\\\" }
+    }
 
 $changed = 0
 foreach ($file in $targets) {

@@ -99,5 +99,6 @@ This repo uses `dotnet format`. To enable the committed pre-commit hook:
 
 ```bash
 git config core.hooksPath .githooks
-dotnet tool restore
 ```
+
+The hook only formats staged C# files and the repo pins the required .NET SDK via `global.json`.

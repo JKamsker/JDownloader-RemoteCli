@@ -86,7 +86,7 @@ public sealed class ResolutionAndSafetyTests
         Assert.Equal(2, refused.ExitCode);
         Assert.Contains("\"kind\": \"usage\"", refused.StdOut);
 
-        var preview = await CliTestHarness.RunAsync(env, ["downloads", "links", "remove", "--dry-run", "--json"]);
+        var preview = await CliTestHarness.RunAsync(env, ["downloads", "links", "remove", "--dry-run", "--json", "--link-id", "123"]);
         Assert.Equal(0, preview.ExitCode);
         Assert.Contains("\"ok\": true", preview.StdOut);
         Assert.Contains("\"action\": \"dry-run\"", preview.StdOut);

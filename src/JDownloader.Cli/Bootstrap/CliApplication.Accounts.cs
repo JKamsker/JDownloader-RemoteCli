@@ -11,7 +11,7 @@ internal static class CliApplicationAccountsRegistration
         {
             accounts.SetDescription("Manage premium accounts and basic-auth entries.");
             accounts.AddCommand<AccountsListCommand>("list").WithDescription("List accounts.");
-            accounts.AddCommand<AccountsGetCommand>("get").WithDescription("Legacy: resolve a premium hoster URL (prefer 'accounts hosters url').");
+            accounts.AddCommand<AccountsGetCommand>("get").WithDescription("Deprecated alias for 'accounts hosters url'; kept for backwards compatibility.");
             accounts.AddCommand<AccountsAddCommand>("add").WithDescription("Add an account.");
             accounts.AddCommand<AccountsUpdateCommand>("update").WithDescription("Update username/password for an account id.");
             accounts.AddCommand<AccountsEnableCommand>("enable").WithDescription("Enable accounts by id.");

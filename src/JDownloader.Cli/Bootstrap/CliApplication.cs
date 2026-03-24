@@ -11,7 +11,7 @@ namespace JDownloader.Cli.Bootstrap;
 
 public static class CliApplication
 {
-    public static CommandApp Create(ICliEnvironment? environment = null)
+    public static CommandApp Create(ICliEnvironment? environment = null, Action<IServiceCollection>? configureServices = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton<ICliEnvironment>(environment ?? new SystemCliEnvironment());
@@ -28,6 +28,7 @@ public static class CliApplication
         services.AddSingleton<IMyJdRelayClient, MyJdRelayClient>();
         services.AddSingleton<IDeviceCatalog, DeviceCatalog>();
         services.AddSingleton<IMyJdTransport, LiveMyJdTransport>();
+        configureServices?.Invoke(services);
 
         var app = new CommandApp(new TypeRegistrar(services));
         app.Configure(config =>
@@ -42,8 +43,10 @@ public static class CliApplication
             CliApplicationAccountsRegistration.Register(config);
             CliApplicationExtractionRegistration.Register(config);
             CliApplicationSettingsRegistration.Register(config);
-            CliApplicationCaptchaEventsRegistration.Register(config);
-            CliApplicationSystemAdvancedRegistration.Register(config);
+            CliApplicationCaptchaRegistration.Register(config);
+            CliApplicationEventsRegistration.Register(config);
+            CliApplicationSystemRegistration.Register(config);
+            CliApplicationAdvancedRegistration.Register(config);
             config.AddCommand<DoctorCommand>("doctor").WithDescription("Inspect config paths, resolution, and stored auth state.");
         });
 

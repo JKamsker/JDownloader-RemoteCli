@@ -34,7 +34,7 @@ public sealed class AccountsGetCommand : DeviceApiCommand<AccountsGetSettings>
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(settings.Hoster))
-            throw CliException.Usage("accounts get requires --hoster <name>.");
+            throw CliException.Usage("accounts get requires --hoster <name>.", "Prefer 'jdr accounts hosters url --hoster <name>'.");
 
         var plan = new MyJdRequestPlan(
             "accounts.get",

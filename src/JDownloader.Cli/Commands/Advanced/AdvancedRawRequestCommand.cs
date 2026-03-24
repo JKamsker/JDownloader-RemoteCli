@@ -9,7 +9,7 @@ namespace JDownloader.Cli.Commands.Advanced;
 public sealed class RawRequestSettings : DeviceCommandSettings
 {
     [CommandArgument(0, "<ENDPOINT>")]
-    [Description("My.JDownloader endpoint path (or full URL). Example: /downloadsV2/queryLinks.")]
+    [Description("My.JDownloader endpoint path. Example: /downloadsV2/queryLinks.")]
     public required string Path { get; init; }
 
     [CommandOption("--query-json <JSON>")]
@@ -59,10 +59,11 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
             JsonInput.ParseOptional(settings.BodyJson),
             Destructive: settings.Destructive,
             ProducesBinary: producesBinary,
-            resolved.Device?.Id);
+            resolved.Device?.Id,
+            PreserveRawParameters: true);
 
         if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan, settings.OutputFile);
 
         if (plan.Destructive)
         {
@@ -113,16 +114,23 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
     private static string NormalizeEndpoint(string rawPath)
     {
         if (string.IsNullOrWhiteSpace(rawPath))
-            throw CliException.Usage("advanced raw request requires <PATH>.");
+            throw CliException.Usage("advanced raw request requires <ENDPOINT>.");
 
         var trimmed = rawPath.Trim();
 
-        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.AbsolutePath))
-            trimmed = uri.AbsolutePath;
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+        {
+            throw CliException.Usage(
+                "advanced raw request expects an endpoint path, not a full relay URL.",
+                "Pass only the endpoint path, for example '/downloadsV2/queryLinks', and move any request data into --query-json or --body-json.");
+        }
 
-        var queryIndex = trimmed.IndexOfAny(['?', '#']);
-        if (queryIndex >= 0)
-            trimmed = trimmed[..queryIndex];
+        if (trimmed.Contains('?') || trimmed.Contains('#'))
+        {
+            throw CliException.Usage(
+                "advanced raw request endpoint paths cannot contain query strings or fragments.",
+                "Pass only the endpoint path and move request data into --query-json or --body-json.");
+        }
 
         if (!trimmed.StartsWith('/'))
             trimmed = "/" + trimmed;

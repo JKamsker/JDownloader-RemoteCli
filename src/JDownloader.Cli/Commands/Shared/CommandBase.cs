@@ -24,7 +24,7 @@ public abstract class AnonymousCommand<TSettings> : AsyncCommand<TSettings>
         try
         {
             var output = await ExecuteCoreAsync(context, settings, cancellationToken);
-            _outputRenderer.WriteAnonymousSuccess(mode, output);
+            _outputRenderer.WriteAnonymousSuccess(mode, output, settings.Quiet);
             return 0;
         }
         catch (CliException ex)
@@ -68,7 +68,7 @@ public abstract class ProfileApiCommand<TSettings> : AsyncCommand<TSettings>
         {
             resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
             var output = await ExecuteCoreAsync(context, settings, resolved, cancellationToken);
-            _outputRenderer.WriteSuccess(resolved, output);
+            _outputRenderer.WriteSuccess(resolved, output, settings.Quiet);
             return 0;
         }
         catch (CliException ex)
@@ -126,7 +126,7 @@ public abstract class DeviceApiCommand<TSettings> : AsyncCommand<TSettings>
         {
             resolved = await _profileResolver.ResolveAsync(settings, RequireDevice, resolveDeviceSelectors: true, cancellationToken);
             var output = await ExecuteCoreAsync(context, settings, resolved, cancellationToken);
-            _outputRenderer.WriteSuccess(resolved, output);
+            _outputRenderer.WriteSuccess(resolved, output, settings.Quiet);
             return 0;
         }
         catch (CliException ex)

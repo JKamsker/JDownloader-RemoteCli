@@ -119,7 +119,7 @@ internal static class MyJdCaptchaEventsParameterBuilders
             || !MyJdParameterSupport.TryGetString(values, ["arg3"], out var arg3)
             || !MyJdParameterSupport.TryGetString(values, ["arg4"], out var arg4))
         {
-            throw CliException.Usage("captcha forward create-job requires 4 arguments.");
+            throw CliException.Usage("captcha forward create-job requires --arg1 <text> --arg2 <text> --arg3 <text> --arg4 <text>.");
         }
 
         return (new object?[] { arg1, arg2, arg3, arg4 }, null);

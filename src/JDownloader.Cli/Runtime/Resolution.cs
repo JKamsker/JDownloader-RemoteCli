@@ -245,7 +245,8 @@ public sealed class ProfileResolver : IProfileResolver
             return new ResolvedDevice(profile.DefaultDeviceId, profile.DefaultDeviceName ?? profile.DefaultDeviceId);
         }
 
-        if (!string.IsNullOrWhiteSpace(profile.DefaultDeviceName)
+        if (!string.IsNullOrWhiteSpace(profile.DefaultDeviceId)
+            && !string.IsNullOrWhiteSpace(profile.DefaultDeviceName)
             && string.Equals(profile.DefaultDeviceName, trimmed, StringComparison.OrdinalIgnoreCase))
         {
             return new ResolvedDevice(profile.DefaultDeviceId ?? profile.DefaultDeviceName, profile.DefaultDeviceName);

@@ -21,10 +21,10 @@ jdr captcha skip --id 123 --type "SKIPPED"
 
 The upstream My.JDownloader API documentation lists `createJobRecaptchaV2` as **4 unnamed string parameters**. Their meaning depends on your captcha-forward setup/provider.
 
-`jdr` passes them through unchanged **in order** as `arg1..arg4`.
+`jdr` exposes them as explicit `--arg1..4` flags and passes them through unchanged **in order**.
 
 ```bash
-jdr captcha forward create-job <PARAM1> <PARAM2> <PARAM3> <PARAM4>
+jdr captcha forward create-job --arg1 "..." --arg2 "..." --arg3 "..." --arg4 "..."
 ```
 
 If you prefer explicit naming, you can use the raw escape hatch and provide `arg1..arg4` yourself:

@@ -8,21 +8,21 @@ namespace JDownloader.Cli.Commands.Captcha;
 
 public sealed class CaptchaForwardCreateJobSettings : DeviceCommandSettings
 {
-    [CommandArgument(0, "<PARAM1>")]
-    [Description("First (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
-    public required string Param1 { get; init; }
+    [CommandOption("--arg1 <TEXT>")]
+    [Description("Provider-specific RecaptchaV2 argument 1.")]
+    public string? Arg1 { get; init; }
 
-    [CommandArgument(1, "<PARAM2>")]
-    [Description("Second (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
-    public required string Param2 { get; init; }
+    [CommandOption("--arg2 <TEXT>")]
+    [Description("Provider-specific RecaptchaV2 argument 2.")]
+    public string? Arg2 { get; init; }
 
-    [CommandArgument(2, "<PARAM3>")]
-    [Description("Third (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
-    public required string Param3 { get; init; }
+    [CommandOption("--arg3 <TEXT>")]
+    [Description("Provider-specific RecaptchaV2 argument 3.")]
+    public string? Arg3 { get; init; }
 
-    [CommandArgument(3, "<PARAM4>")]
-    [Description("Fourth (unnamed) string parameter for /captchaforward/createJobRecaptchaV2.")]
-    public required string Param4 { get; init; }
+    [CommandOption("--arg4 <TEXT>")]
+    [Description("Provider-specific RecaptchaV2 argument 4.")]
+    public string? Arg4 { get; init; }
 }
 
 public sealed class CaptchaForwardCreateJobCommand : DeviceApiCommand<CaptchaForwardCreateJobSettings>
@@ -48,16 +48,24 @@ public sealed class CaptchaForwardCreateJobCommand : DeviceApiCommand<CaptchaFor
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(settings.Arg1)
+            || string.IsNullOrWhiteSpace(settings.Arg2)
+            || string.IsNullOrWhiteSpace(settings.Arg3)
+            || string.IsNullOrWhiteSpace(settings.Arg4))
+        {
+            throw CliException.Usage("captcha forward create-job requires --arg1 <text> --arg2 <text> --arg3 <text> --arg4 <text>.");
+        }
+
         var plan = new MyJdRequestPlan(
             "captcha.forward.create-job",
             "POST",
             "/captchaforward/createJobRecaptchaV2",
             new Dictionary<string, object?>
             {
-                ["arg1"] = settings.Param1,
-                ["arg2"] = settings.Param2,
-                ["arg3"] = settings.Param3,
-                ["arg4"] = settings.Param4,
+                ["arg1"] = settings.Arg1.Trim(),
+                ["arg2"] = settings.Arg2.Trim(),
+                ["arg3"] = settings.Arg3.Trim(),
+                ["arg4"] = settings.Arg4.Trim(),
             },
             null,
             true,
@@ -67,7 +75,9 @@ public sealed class CaptchaForwardCreateJobCommand : DeviceApiCommand<CaptchaFor
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        await _confirmationGuard.AuthorizeAsync(settings, "'captcha forward create-job' will create a captcha forward job.");
+        await _confirmationGuard.AuthorizeAsync(
+            settings,
+            "'captcha forward create-job' will create a provider-specific RecaptchaV2 forward job.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);

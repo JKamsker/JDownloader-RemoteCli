@@ -35,7 +35,7 @@ internal static class CliApplicationGrabberRegistration
             grabber.AddBranch("variants", variants =>
             {
                 variants.SetDescription("Inspect and set variants for crawl results.");
-                variants.AddCommand<GrabberVariantsListCommand>("list").WithDescription("List variants for the current selection.");
+                variants.AddCommand<GrabberVariantsListCommand>("list").WithDescription("List variants for a linkgrabber link id.");
                 variants.AddCommand<GrabberVariantsSetCommand>("set").WithDescription("Select a variant for a linkgrabber link.");
             });
         });

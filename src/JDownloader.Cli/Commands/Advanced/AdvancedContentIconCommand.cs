@@ -63,7 +63,7 @@ public sealed class AdvancedContentIconCommand : DeviceApiCommand<AdvancedConten
             resolved.Device?.Id);
 
         if (settings.DryRun)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan, settings.OutputFile);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         var bytes = BinaryData.DecodeBytesOrThrow(result.Data, "advanced content icon");

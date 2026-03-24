@@ -7,8 +7,8 @@ public sealed record CommandOutput(
 
 public interface IOutputRenderer
 {
-    void WriteSuccess(ResolvedProfileContext resolved, CommandOutput output);
-    void WriteAnonymousSuccess(OutputMode mode, CommandOutput output);
+    void WriteSuccess(ResolvedProfileContext resolved, CommandOutput output, bool quiet);
+    void WriteAnonymousSuccess(OutputMode mode, CommandOutput output, bool quiet);
     void WriteFailure(OutputMode mode, CliException exception, string? diagnosticLogPath, bool verbose, bool quiet);
     void WriteUnexpectedFailure(OutputMode mode, Exception exception, string? diagnosticLogPath, bool verbose, bool quiet);
 }
