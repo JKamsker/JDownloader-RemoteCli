@@ -1,16 +1,44 @@
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Extraction;
 
-public sealed class ExtractionQueueCommand : ExtractionCommandBase
+public sealed class ExtractionQueueCommand : DeviceApiCommand<DeviceNoArgSettings>
 {
-    public ExtractionQueueCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e)
-        : base(a, b, c, d, e)
+    private readonly IMyJdTransport _transport;
+
+    public ExtractionQueueCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
+        _transport = transport;
     }
 
-    protected override string Operation => "extraction.queue";
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        DeviceNoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        var plan = new MyJdRequestPlan(
+            "extraction.queue",
+            "POST",
+            "/extraction/getQueue",
+            null,
+            null,
+            false,
+            false,
+            resolved.Device?.Id);
 
-    protected override string Endpoint => "/extraction/getQueue";
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
+    }
 }

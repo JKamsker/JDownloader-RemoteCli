@@ -9,8 +9,12 @@ namespace JDownloader.Cli.Commands.Settings;
 public sealed class SettingsExtensionsDisableSettings : DeviceCommandSettings
 {
     [CommandOption("--id <ID>")]
-    [Description("Extension id to uninstall.")]
+    [Description("Extension id to disable.")]
     public string? Id { get; init; }
+
+    [CommandOption("--classname <NAME>")]
+    [Description("Extension classname/config interface to disable (alternative to --id).")]
+    public string? Classname { get; init; }
 }
 
 public sealed class SettingsExtensionsDisableCommand : DeviceApiCommand<SettingsExtensionsDisableSettings>
@@ -36,14 +40,18 @@ public sealed class SettingsExtensionsDisableCommand : DeviceApiCommand<Settings
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(settings.Id))
-            throw CliException.Usage("settings extensions disable requires --id <id>.");
+        if (string.IsNullOrWhiteSpace(settings.Id) == string.IsNullOrWhiteSpace(settings.Classname))
+            throw CliException.Usage("settings extensions disable requires exactly one of --id <id> or --classname <name>.");
+
+        var classname = string.IsNullOrWhiteSpace(settings.Classname)
+            ? await ResolveClassnameAsync(settings.Id!.Trim(), resolved, cancellationToken)
+            : settings.Classname!.Trim();
 
         var plan = new MyJdRequestPlan(
             "settings.extensions.disable",
             "POST",
-            "/extensions/uninstall",
-            new Dictionary<string, object?> { ["id"] = settings.Id.Trim() },
+            "/extensions/setEnabled",
+            new Dictionary<string, object?> { ["classname"] = classname, ["b"] = false },
             null,
             true,
             false,
@@ -52,16 +60,55 @@ public sealed class SettingsExtensionsDisableCommand : DeviceApiCommand<Settings
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
-            $"'settings extensions disable' will uninstall extension '{settings.Id.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+            $"'settings extensions disable' will disable extension '{classname}'.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(
             result.Data,
             HumanDataRenderer.Render(result.Data),
             result.Warnings);
+    }
+
+    private async Task<string> ResolveClassnameAsync(string id, ResolvedProfileContext resolved, CancellationToken cancellationToken)
+    {
+        var result = await _transport.ExecuteAsync(
+            resolved,
+            new MyJdRequestPlan(
+                "settings.extensions.list",
+                "POST",
+                "/extensions/list",
+                new Dictionary<string, object?>(),
+                null,
+                false,
+                false,
+                resolved.Device?.Id),
+            cancellationToken);
+
+        if (result.Data is not IEnumerable<object?> sequence)
+            throw CliException.NotFound("Extension list response was not a sequence.");
+
+        var matches = sequence
+            .OfType<Dictionary<string, object?>>()
+            .Where(item => item.TryGetValue("id", out var value)
+                && value is not null
+                && string.Equals(value.ToString(), id, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matches.Count == 0)
+            throw CliException.NotFound($"Extension id '{id}' was not found.");
+        if (matches.Count > 1)
+            throw CliException.Conflict($"Extension id '{id}' matched multiple entries.");
+
+        var item = matches[0];
+        if (item.TryGetValue("configInterface", out var rawClassname)
+            && rawClassname is not null
+            && !string.IsNullOrWhiteSpace(rawClassname.ToString()))
+        {
+            return rawClassname.ToString()!.Trim();
+        }
+
+        throw CliException.NotFound($"Extension id '{id}' did not include a config interface/classname.");
     }
 }

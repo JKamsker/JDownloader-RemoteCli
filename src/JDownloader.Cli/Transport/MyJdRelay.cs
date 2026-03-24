@@ -490,30 +490,30 @@ internal static class MyJdParameterMapper
         return plan.Endpoint switch
         {
             "/linkgrabberv2/queryLinks" => BuildJsonStringParameter(
-                BuildGrabberLinksQuery(plan.Query, out var warnings),
+                BuildGrabberLinksQuery(EnsureNoBody(plan, "grabber links list does not accept --body-json."), out var warnings),
                 warnings),
             "/linkgrabberv2/queryPackages" => BuildJsonStringParameter(
-                BuildGrabberPackagesQuery(plan.Query, out var warnings),
+                BuildGrabberPackagesQuery(EnsureNoBody(plan, "grabber packages list does not accept --body-json."), out var warnings),
                 warnings),
             "/linkgrabberv2/queryLinkCrawlerJobs" => BuildJsonStringParameter(
-                BuildGrabberJobsQuery(plan.Query, out var warnings),
+                BuildGrabberJobsQuery(EnsureNoBody(plan, "grabber jobs list does not accept --body-json."), out var warnings),
                 warnings),
             "/linkgrabberv2/addLinks" => BuildGrabberAddLinksParameters(plan.Query, out var warnings),
             "/linkgrabberv2/addContainer" => BuildGrabberAddContainerParameters(plan.Query, out var warnings),
             "/downloadsV2/queryLinks" => BuildJsonStringParameter(
-                BuildDownloadsLinksQuery(plan.Query, out var warnings),
+                BuildDownloadsLinksQuery(EnsureNoBody(plan, "downloads links list does not accept --body-json."), out var warnings),
                 warnings),
             "/downloadsV2/queryPackages" => BuildJsonStringParameter(
-                BuildDownloadsPackagesQuery(plan.Query, out var warnings),
+                BuildDownloadsPackagesQuery(EnsureNoBody(plan, "downloads packages list does not accept --body-json."), out var warnings),
                 warnings),
             "/extensions/list" => BuildJsonStringParameter(
-                BuildExtensionsQuery(plan.Query, out var warnings),
+                BuildExtensionsQuery(EnsureNoBody(plan, "settings extensions list does not accept --body-json."), out var warnings),
                 warnings),
             "/plugins/list" => BuildJsonStringParameter(
-                BuildPluginsQuery(plan.Query, out var warnings),
+                BuildPluginsQuery(EnsureNoBody(plan, "settings plugins list does not accept --body-json."), out var warnings),
                 warnings),
             "/accountsV2/listAccounts" => BuildJsonStringParameter(
-                BuildAccountsQuery(plan.Query, out var warnings),
+                BuildAccountsQuery(EnsureNoBody(plan, "accounts list does not accept --body-json."), out var warnings),
                 warnings),
             "/accountsV2/disableAccounts" => BuildLongArrayParameters(
                 plan.Query,
@@ -612,20 +612,20 @@ internal static class MyJdParameterMapper
             "/extensions/install" => BuildSingleStringParameter(
                 plan.Query,
                 "id",
-                "settings extensions enable requires --id <id>.",
+                "settings extensions install requires --id <id>.",
                 out var warnings),
-            "/extensions/uninstall" => BuildSingleStringParameter(
-                plan.Query,
-                "id",
-                "settings extensions disable requires --id <id>.",
-                out var warnings),
+            "/extensions/setEnabled" => BuildExtensionsSetEnabledParameters(plan.Query, out var warnings),
             "/plugins/get" => BuildPluginsGetParameters(plan.Query, out var warnings),
             "/system/getStorageInfos" => BuildSystemStorageParameters(plan.Query, out var warnings),
+            "/system/getSystemInfos" => EnsureNoParameters(plan, "system info does not accept query/body parameters."),
             "/system/shutdownOS" => BuildSingleBooleanParameter(
                 plan.Query,
                 "force",
                 "system os shutdown requires --force (or omit it to send force=false).",
                 out var warnings),
+            "/system/hibernateOS" => EnsureNoParameters(plan, "system os hibernate does not accept query/body parameters."),
+            "/system/standbyOS" => EnsureNoParameters(plan, "system os standby does not accept query/body parameters."),
+            "/reconnect/doReconnect" => EnsureNoParameters(plan, "system reconnect does not accept query/body parameters."),
             "/contentV2/getIcon" => BuildContentGetIconParameters(plan.Query, out var warnings),
             "/contentV2/getFavIcon" => BuildContentGetFavIconParameters(plan.Query, out var warnings),
             "/contentV2/getFileIcon" => BuildContentGetFileIconParameters(plan.Query, out var warnings),
@@ -651,6 +651,14 @@ internal static class MyJdParameterMapper
                 out var warnings),
             "/dialogs/answer" => BuildDialogsAnswerParameters(plan.Query, out var warnings),
             "/flash/add" => BuildFlashAddParameters(plan.Query, out var warnings),
+            "/extraction/getQueue" => EnsureNoParameters(plan, "extraction queue does not accept query/body parameters."),
+            "/jd/version" => EnsureNoParameters(plan, "system jd version does not accept query/body parameters."),
+            "/jd/getCoreRevision" => EnsureNoParameters(plan, "system jd revision does not accept query/body parameters."),
+            "/jd/uptime" => EnsureNoParameters(plan, "system jd uptime does not accept query/body parameters."),
+            "/jd/refreshPlugins" => EnsureNoParameters(plan, "system jd refresh-plugins does not accept query/body parameters."),
+            "/update/isUpdateAvailable" => EnsureNoParameters(plan, "system update check does not accept query/body parameters."),
+            "/update/runUpdateCheck" => EnsureNoParameters(plan, "system update run does not accept query/body parameters."),
+            "/update/restartAndUpdate" => EnsureNoParameters(plan, "system update restart does not accept query/body parameters."),
             _ => BuildGenericParameters(plan),
         };
     }
@@ -757,7 +765,7 @@ internal static class MyJdParameterMapper
     private static object BuildExtensionsQuery(object? query, out IReadOnlyList<string>? warnings)
     {
         var projection = CreateProjection(
-            ["configInterface", "description", "enabled", "iconKey", "installed", "name"],
+            ["configInterface", "description", "enabled", "iconKey", "id", "installed", "name"],
             includeByDefault: true);
         projection["pattern"] = string.Empty;
         return BuildQueryObject(query, projection, out warnings);
@@ -1291,6 +1299,31 @@ internal static class MyJdParameterMapper
         throw CliException.Usage("system storage requires --path <path>.");
     }
 
+    private static (object? Parameters, IReadOnlyList<string>? Warnings) BuildExtensionsSetEnabledParameters(object? query, out IReadOnlyList<string>? warnings)
+    {
+        warnings = null;
+        if (query is Dictionary<string, object?> values
+            && values.TryGetValue("classname", out var rawClassname)
+            && rawClassname is not null
+            && !string.IsNullOrWhiteSpace(rawClassname.ToString())
+            && values.TryGetValue("b", out var rawEnabled)
+            && rawEnabled is not null
+            && TryReadBool(rawEnabled, out var enabled))
+        {
+            return (new object?[] { rawClassname.ToString(), enabled }, null);
+        }
+
+        throw CliException.Usage("settings extensions enable/disable requires --classname <name> (or --id <id>) and a boolean state.");
+    }
+
+    private static object? EnsureNoBody(MyJdRequestPlan plan, string usageMessage)
+    {
+        if (!IsEmpty(plan.Body))
+            throw CliException.Usage(usageMessage);
+
+        return plan.Query;
+    }
+
     private static bool TryGetLong(Dictionary<string, object?> values, string[] keys, out long longValue)
     {
         foreach (var key in keys)
@@ -1516,6 +1549,9 @@ internal static class MyJdParameterMapper
             if (values.TryGetValue(selectorKey, out var rawValues) && TryReadLongArray(rawValues, out var longValues))
                 result[fieldName] = longValues;
         }
+
+        if (values.TryGetValue("packageIds", out var packageIds) && !IsEmpty(packageIds) && !longArrayFields.Contains("packageUUIDs", StringComparer.OrdinalIgnoreCase))
+            throw CliException.Usage("This endpoint does not support --package-id.");
 
         if (values.TryGetValue("hosters", out var hosters) && !IsEmpty(hosters))
             throw CliException.Usage("This endpoint does not support --hoster.");

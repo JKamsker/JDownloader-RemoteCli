@@ -26,6 +26,9 @@
 - [x] Make 0-arg download controller commands not accept selector/body flags (`downloads status|speed|start|stop`) and make `grabber clear` a true 0-arg command
 - [ ] Make profile-aware output mode apply to non-device commands (`JD2_OUTPUT` / saved profile `output` for `auth status/whoami/logout` and `device list/use`)
 - [ ] Make `--dry-run` honor “no mutation” for auth/profile/device mutators (`auth logout`, `auth profiles add|use|rename`, `device use`, etc.)
+- [x] Reject query/body flags on 0-arg endpoints still using `FixedRequestPlanCommand` (system info/jd version/reconnect/update*, extraction queue)
+- [x] Make query endpoints error on `--body-json` (currently silently ignored for `*/queryLinks`, `*/queryPackages`, `/extensions/list`, `/plugins/list`, `/accountsV2/listAccounts`)
+- [x] Fix settings extensions commands to match docs: implement `/extensions/setEnabled` and adjust `enable/disable` UX (and ensure `extensions list/get` can see `id`/`classname`)
 - [ ] Align auth login profile resolution: if multiple profiles exist and no default, require `--profile` instead of silently creating/using `default`
 - [ ] Make `device use` ambiguity rules match resolver (don’t pick first match)
 - [ ] Avoid deleting shared credentials when removing a profile (only delete email creds if no other profile references it)

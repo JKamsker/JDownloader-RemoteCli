@@ -236,6 +236,7 @@ public static class CliApplication
             {
                 extensions.AddCommand<SettingsExtensionsListCommand>("list");
                 extensions.AddCommand<SettingsExtensionsGetCommand>("get");
+                extensions.AddCommand<SettingsExtensionsInstallCommand>("install");
                 extensions.AddCommand<SettingsExtensionsEnableCommand>("enable");
                 extensions.AddCommand<SettingsExtensionsDisableCommand>("disable");
             });
