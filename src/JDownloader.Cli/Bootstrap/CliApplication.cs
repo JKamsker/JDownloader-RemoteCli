@@ -36,17 +36,17 @@ public static class CliApplication
             config.SetApplicationName("jdr");
             config.SetApplicationVersion(GetVersion());
 
-            CliApplicationAuthRegistration.Register(config);
-            CliApplicationDeviceRegistration.Register(config);
-            CliApplicationDownloadsRegistration.Register(config);
-            CliApplicationGrabberRegistration.Register(config);
-            CliApplicationAccountsRegistration.Register(config);
-            CliApplicationExtractionRegistration.Register(config);
-            CliApplicationSettingsRegistration.Register(config);
-            CliApplicationCaptchaRegistration.Register(config);
-            CliApplicationEventsRegistration.Register(config);
-            CliApplicationSystemRegistration.Register(config);
-            CliApplicationAdvancedRegistration.Register(config);
+            config.RegisterAuthCommands();
+            config.RegisterDeviceCommands();
+            config.RegisterDownloadsCommands();
+            config.RegisterGrabberCommands();
+            config.RegisterAccountsCommands();
+            config.RegisterExtractionCommands();
+            config.RegisterSettingsCommands();
+            config.RegisterCaptchaCommands();
+            config.RegisterEventsCommands();
+            config.RegisterSystemCommands();
+            config.RegisterAdvancedCommands();
             config.AddCommand<DoctorCommand>("doctor").WithDescription("Inspect config paths, resolution, and stored auth state.");
         });
 

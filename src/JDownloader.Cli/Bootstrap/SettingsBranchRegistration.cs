@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationSettingsRegistration
+internal static class SettingsBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterSettingsCommands(this IConfigurator config)
     {
         config.AddBranch("settings", settings =>
         {

@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationAuthRegistration
+internal static class AuthBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterAuthCommands(this IConfigurator config)
     {
         config.AddBranch("auth", auth =>
         {

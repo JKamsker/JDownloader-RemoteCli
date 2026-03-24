@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationCaptchaRegistration
+internal static class CaptchaBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterCaptchaCommands(this IConfigurator config)
     {
         config.AddBranch("captcha", captcha =>
         {

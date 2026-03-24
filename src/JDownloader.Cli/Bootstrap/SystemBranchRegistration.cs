@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationSystemRegistration
+internal static class SystemBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterSystemCommands(this IConfigurator config)
     {
         config.AddBranch("system", system =>
         {

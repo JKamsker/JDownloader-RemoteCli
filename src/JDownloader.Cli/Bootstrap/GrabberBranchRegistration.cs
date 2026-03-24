@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationGrabberRegistration
+internal static class GrabberBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterGrabberCommands(this IConfigurator config)
     {
         config.AddBranch("grabber", grabber =>
         {

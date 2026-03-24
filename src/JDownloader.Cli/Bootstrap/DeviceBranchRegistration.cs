@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationDeviceRegistration
+internal static class DeviceBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterDeviceCommands(this IConfigurator config)
     {
         config.AddBranch("device", device =>
         {

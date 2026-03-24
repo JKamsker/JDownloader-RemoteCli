@@ -3,9 +3,9 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Bootstrap;
 
-internal static class CliApplicationEventsRegistration
+internal static class EventsBranchRegistration
 {
-    public static void Register(IConfigurator config)
+    public static void RegisterEventsCommands(this IConfigurator config)
     {
         config.AddBranch("events", events =>
         {
