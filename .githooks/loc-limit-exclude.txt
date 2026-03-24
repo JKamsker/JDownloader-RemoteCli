@@ -1,0 +1,6 @@
+# One pattern per line. Bash globs are supported (matched against repo-relative paths).
+# Lines starting with '#' are comments.
+#
+# Example:
+# src/JDownloader.Cli/Transport/MyJdRelay.cs
+#
