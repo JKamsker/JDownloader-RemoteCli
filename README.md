@@ -78,12 +78,12 @@ Environment variables that influence defaults include: `JD2_PROFILE`, `JD2_DEVIC
 
 Common workflow guides:
 
-- Authentication: `docs/Common_UseCases/01_Authentication.md`
-- Profiles & config: `docs/Common_UseCases/02_Profiles_And_Config.md`
-- Devices: `docs/Common_UseCases/03_Devices.md`
-- Grabber + downloads: `docs/Common_UseCases/04_Grabber_And_Downloads.md`
-- Scripting & automation: `docs/Common_UseCases/05_Scripting_And_Automation.md`
-- Generated CLI reference: `docs/clidoc/index.md`
+- Authentication: [docs/Common_UseCases/01_Authentication.md](docs/Common_UseCases/01_Authentication.md)
+- Profiles & config: [docs/Common_UseCases/02_Profiles_And_Config.md](docs/Common_UseCases/02_Profiles_And_Config.md)
+- Devices: [docs/Common_UseCases/03_Devices.md](docs/Common_UseCases/03_Devices.md)
+- Grabber + downloads: [docs/Common_UseCases/04_Grabber_And_Downloads.md](docs/Common_UseCases/04_Grabber_And_Downloads.md)
+- Scripting & automation: [docs/Common_UseCases/05_Scripting_And_Automation.md](docs/Common_UseCases/05_Scripting_And_Automation.md)
+- Generated CLI reference: [docs/clidoc/index.md](docs/clidoc/index.md)
 
 ## Building from Source
 
