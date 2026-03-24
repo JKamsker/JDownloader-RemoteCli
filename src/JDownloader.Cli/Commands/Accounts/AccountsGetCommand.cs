@@ -36,17 +36,22 @@ public sealed class AccountsGetCommand : DeviceApiCommand<AccountsGetSettings>
         if (string.IsNullOrWhiteSpace(settings.Hoster))
             throw CliException.Usage("accounts get requires --hoster <name>.");
 
+        var plan = new MyJdRequestPlan(
+            "accounts.get",
+            "POST",
+            "/accountsV2/getPremiumHosterUrl",
+            new Dictionary<string, object?> { ["hoster"] = settings.Hoster.Trim() },
+            null,
+            false,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
         var result = await _transport.ExecuteAsync(
             resolved,
-            new MyJdRequestPlan(
-                "accounts.get",
-                "POST",
-                "/accountsV2/getPremiumHosterUrl",
-                new Dictionary<string, object?> { ["hoster"] = settings.Hoster.Trim() },
-                null,
-                false,
-                false,
-                resolved.Device?.Id),
+            plan,
             cancellationToken);
 
         return new CommandOutput(

@@ -31,12 +31,8 @@ public sealed class DownloadsStopmarkClearCommand : DeviceApiCommand<DeviceNoArg
         var plan = new MyJdRequestPlan(
             "downloads.stopmark.clear",
             "POST",
-            "/downloadsV2/setStopMark",
-            new Dictionary<string, object?>
-            {
-                ["linkId"] = -1L,
-                ["packageId"] = -1L,
-            },
+            "/downloadsV2/removeStopMark",
+            null,
             null,
             true,
             false,
@@ -45,9 +41,7 @@ public sealed class DownloadsStopmarkClearCommand : DeviceApiCommand<DeviceNoArg
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'downloads stopmark clear' will clear the current stop mark.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'downloads stopmark clear' will clear the current stop mark.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

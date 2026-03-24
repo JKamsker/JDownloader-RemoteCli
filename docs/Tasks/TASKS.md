@@ -19,3 +19,17 @@
 - [x] Verify `plugins list` query mapping matches docs (`pattern`/`version` are projection booleans)
 - [x] Fix docs mismatches: `jd2` vs `jdr`, removed `advanced ui` commands, and “global flags before command” examples that Spectre currently rejects
 - [x] Fix repo tooling docs (`.githooks/*`, `scripts/format-oneline-csharp.ps1`) to describe what they actually do (no “command stubs” wording unless true)
+
+- [x] Fix remaining endpoints missing required params: captcha (`captcha get`, `captcha job`, `captcha forward get-result`), events (`events listen`, `events status`)
+- [x] Add positional-parameter mapper support for captcha/events/config/extraction endpoints (avoid sending `{...}` as a single param): `/captcha/*`, `/captchaforward/*`, `/events/*`, `/config/list`, `/extraction/setArchiveSettings`
+- [x] Fix `downloads stopmark clear` to use documented `/downloadsV2/removeStopMark` (0-arg) instead of `/downloadsV2/setStopMark` sentinels
+- [x] Make 0-arg download controller commands not accept selector/body flags (`downloads status|speed|start|stop`) and make `grabber clear` a true 0-arg command
+- [ ] Make profile-aware output mode apply to non-device commands (`JD2_OUTPUT` / saved profile `output` for `auth status/whoami/logout` and `device list/use`)
+- [ ] Make `--dry-run` honor “no mutation” for auth/profile/device mutators (`auth logout`, `auth profiles add|use|rename`, `device use`, etc.)
+- [ ] Align auth login profile resolution: if multiple profiles exist and no default, require `--profile` instead of silently creating/using `default`
+- [ ] Make `device use` ambiguity rules match resolver (don’t pick first match)
+- [ ] Avoid deleting shared credentials when removing a profile (only delete email creds if no other profile references it)
+- [x] Add `--dry-run` to `accounts get` and clarify its purpose (premium hoster URL)
+- [ ] Fix docs drift: Windows path escaping, JSON envelope shape (omit nulls), and exit code meanings in `docs/Common_UseCases/05_Scripting_And_Automation.md`
+- [ ] Decide how to handle confirmation semantics: remove dead `if (!proceed)` branches or change `ConfirmationGuard` to return `false` on “no”
+- [ ] (Optional) Improve help UX: add leaf command descriptions in `src/JDownloader.Cli/Bootstrap/CliApplication.cs`
