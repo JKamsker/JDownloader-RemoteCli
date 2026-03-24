@@ -44,13 +44,19 @@ jobs:
         fi
 
         BASE_VERSION="$(dotnet msbuild src/JDownloader.Cli/JDownloader.Cli.csproj -nologo -getProperty:VersionPrefix)"
+        BASE_NUMERIC_VERSION="${BASE_VERSION%%[-+]*}"
+        IFS='.' read -r base_major base_minor _ <<< "$BASE_NUMERIC_VERSION"
+        if [[ -z "$base_major" || -z "$base_minor" ]]; then
+          echo "Base version '$BASE_VERSION' does not contain a numeric major.minor prefix." >&2
+          exit 1
+        fi
 
         if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
           VERSION="${GITHUB_REF_NAME#v}"
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.release_version }}" ]]; then
           VERSION="${{ inputs.release_version }}"
         else
-          VERSION="${BASE_VERSION}-ci.${{ github.run_number }}"
+          VERSION="${base_major}.${base_minor}.${{ github.run_number }}"
         fi
 
         NUMERIC_VERSION="${VERSION%%[-+]*}"
