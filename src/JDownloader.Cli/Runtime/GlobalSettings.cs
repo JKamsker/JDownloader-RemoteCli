@@ -16,7 +16,7 @@ public abstract class GlobalSettings : CommandSettings
     public string? Profile { get; init; }
 
     [CommandOption("--device <VALUE>")]
-    [Description("Device id or exact device name override.")]
+    [Description("Device id or device name override (case-insensitive).")]
     public string? Device { get; init; }
 
     [CommandOption("--json")]

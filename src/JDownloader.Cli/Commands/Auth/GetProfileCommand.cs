@@ -9,6 +9,7 @@ namespace JDownloader.Cli.Commands.Auth;
 public sealed class GetProfileSettings : GlobalSettings
 {
     [CommandArgument(0, "<NAME>")]
+    [Description("Profile name to inspect.")]
     public required string Name { get; init; }
 }
 

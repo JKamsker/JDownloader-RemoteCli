@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Config;
 using JDownloader.Cli.Runtime;
@@ -8,9 +9,11 @@ namespace JDownloader.Cli.Commands.Auth;
 public sealed class RenameProfileSettings : GlobalSettings
 {
     [CommandArgument(0, "<OLD_NAME>")]
+    [Description("Existing profile name to rename.")]
     public required string OldName { get; init; }
 
     [CommandArgument(1, "<NEW_NAME>")]
+    [Description("New profile name.")]
     public required string NewName { get; init; }
 }
 

@@ -120,16 +120,19 @@ public static class CliApplication
             downloads.AddCommand<DownloadsPauseCommand>("pause").WithDescription("Pause downloads (or resume with --resume).");
             downloads.AddBranch("links", links =>
             {
+                links.SetDescription("Inspect and manage download links.");
                 links.AddCommand<DownloadsLinksListCommand>("list").WithDescription("List download links.");
                 links.AddCommand<DownloadsLinksRemoveCommand>("remove").WithDescription("Remove download links by id.");
             });
             downloads.AddBranch("packages", packages =>
             {
+                packages.SetDescription("Inspect and manage download packages.");
                 packages.AddCommand<DownloadsPackagesListCommand>("list").WithDescription("List download packages.");
                 packages.AddCommand<DownloadsPackagesRemoveCommand>("remove").WithDescription("Remove download packages by id.");
             });
             downloads.AddBranch("stopmark", stopmark =>
             {
+                stopmark.SetDescription("Inspect and manage download stopmarks.");
                 stopmark.AddCommand<DownloadsStopmarkGetCommand>("get").WithDescription("Get the current stopmark.");
                 stopmark.AddCommand<DownloadsStopmarkSetCommand>("set").WithDescription("Set the stopmark (requires link + package id).");
                 stopmark.AddCommand<DownloadsStopmarkClearCommand>("clear").WithDescription("Clear the stopmark.");
@@ -148,21 +151,25 @@ public static class CliApplication
             grabber.AddCommand<GrabberMoveToDownloadsCommand>("move-to-downloads").WithDescription("Move linkgrabber selection into downloads.");
             grabber.AddBranch("links", links =>
             {
+                links.SetDescription("Inspect and manage linkgrabber links.");
                 links.AddCommand<GrabberLinksListCommand>("list").WithDescription("List linkgrabber links.");
                 links.AddCommand<GrabberLinksRemoveCommand>("remove").WithDescription("Remove linkgrabber links by id.");
             });
             grabber.AddBranch("packages", packages =>
             {
+                packages.SetDescription("Inspect and manage linkgrabber packages.");
                 packages.AddCommand<GrabberPackagesListCommand>("list").WithDescription("List linkgrabber packages.");
                 packages.AddCommand<GrabberPackagesRemoveCommand>("remove").WithDescription("Remove linkgrabber packages by id.");
             });
             grabber.AddBranch("jobs", jobs =>
             {
+                jobs.SetDescription("Inspect crawler jobs.");
                 jobs.AddCommand<GrabberJobsListCommand>("list").WithDescription("List crawler jobs.");
                 jobs.AddCommand<GrabberJobsGetCommand>("get").WithDescription("Get crawler jobs by id.");
             });
             grabber.AddBranch("variants", variants =>
             {
+                variants.SetDescription("Inspect and set variants for crawl results.");
                 variants.AddCommand<GrabberVariantsListCommand>("list").WithDescription("List variants for the current selection.");
                 variants.AddCommand<GrabberVariantsSetCommand>("set").WithDescription("Select a variant for a linkgrabber link.");
             });
@@ -184,12 +191,14 @@ public static class CliApplication
             accounts.AddCommand<AccountsRefreshCommand>("refresh").WithDescription("Refresh accounts by id.");
             accounts.AddBranch("hosters", hosters =>
             {
+                hosters.SetDescription("Inspect premium hosters.");
                 hosters.AddCommand<AccountsHostersListCommand>("list").WithDescription("List premium hosters.");
                 hosters.AddCommand<AccountsHostersUrlCommand>("url").WithDescription("Resolve a premium hoster name to its account URL.");
                 hosters.AddCommand<AccountsHostersUrlsCommand>("urls").WithDescription("List premium hoster URLs.");
             });
             accounts.AddBranch("basic-auth", basicAuth =>
             {
+                basicAuth.SetDescription("Manage HTTP/FTP basic-auth entries.");
                 basicAuth.AddCommand<AccountsBasicAuthListCommand>("list").WithDescription("List basic-auth entries.");
                 basicAuth.AddCommand<AccountsBasicAuthAddCommand>("add").WithDescription("Add a basic-auth entry.");
                 basicAuth.AddCommand<AccountsBasicAuthUpdateCommand>("update").WithDescription("Update a basic-auth entry.");
@@ -210,6 +219,7 @@ public static class CliApplication
             extraction.AddCommand<ExtractionAddPasswordCommand>("add-password").WithDescription("Add an extraction password.");
             extraction.AddBranch("settings", settings =>
             {
+                settings.SetDescription("Inspect and update extraction settings.");
                 settings.AddCommand<ExtractionSettingsGetCommand>("get").WithDescription("Get extraction settings.");
                 settings.AddCommand<ExtractionSettingsSetCommand>("set").WithDescription("Update extraction settings.");
             });
@@ -223,6 +233,7 @@ public static class CliApplication
             settings.SetDescription("Inspect config, plugins, and extensions.");
             settings.AddBranch("config", configBranch =>
             {
+                configBranch.SetDescription("Read and update config values.");
                 configBranch.AddCommand<SettingsConfigListCommand>("list").WithDescription("List config entries for an interface.");
                 configBranch.AddCommand<SettingsConfigGetCommand>("get").WithDescription("Get a config entry.");
                 configBranch.AddCommand<SettingsConfigSetCommand>("set").WithDescription("Set a config entry.");
@@ -230,16 +241,18 @@ public static class CliApplication
             });
             settings.AddBranch("plugins", plugins =>
             {
+                plugins.SetDescription("Inspect and resolve plugin config values.");
                 plugins.AddCommand<SettingsPluginsListCommand>("list").WithDescription("List plugins.");
-                plugins.AddCommand<SettingsPluginsGetCommand>("get").WithDescription("Get a plugin by classname.");
+                plugins.AddCommand<SettingsPluginsGetCommand>("get").WithDescription("Get a plugin config entry.");
             });
             settings.AddBranch("extensions", extensions =>
             {
+                extensions.SetDescription("Inspect and manage extensions.");
                 extensions.AddCommand<SettingsExtensionsListCommand>("list").WithDescription("List extensions.");
-                extensions.AddCommand<SettingsExtensionsGetCommand>("get").WithDescription("Get an extension by classname.");
+                extensions.AddCommand<SettingsExtensionsGetCommand>("get").WithDescription("Get an extension by id or name.");
                 extensions.AddCommand<SettingsExtensionsInstallCommand>("install").WithDescription("Install an extension by id.");
-                extensions.AddCommand<SettingsExtensionsEnableCommand>("enable").WithDescription("Enable an extension by classname.");
-                extensions.AddCommand<SettingsExtensionsDisableCommand>("disable").WithDescription("Disable an extension by classname.");
+                extensions.AddCommand<SettingsExtensionsEnableCommand>("enable").WithDescription("Enable an extension by id or classname.");
+                extensions.AddCommand<SettingsExtensionsDisableCommand>("disable").WithDescription("Disable an extension by id or classname.");
             });
         });
     }
@@ -256,6 +269,7 @@ public static class CliApplication
             captcha.AddCommand<CaptchaSkipCommand>("skip").WithDescription("Skip a captcha.");
             captcha.AddBranch("forward", forward =>
             {
+                forward.SetDescription("Captcha forward operations.");
                 forward.AddCommand<CaptchaForwardCreateJobCommand>("create-job").WithDescription("Create a captcha forward job (RecaptchaV2).");
                 forward.AddCommand<CaptchaForwardGetResultCommand>("get-result").WithDescription("Fetch a captcha forward result by job id.");
             });
@@ -286,6 +300,7 @@ public static class CliApplication
             system.AddCommand<SystemReconnectCommand>("reconnect").WithDescription("Trigger reconnect.");
             system.AddBranch("jd", jd =>
             {
+                jd.SetDescription("JDownloader lifecycle operations.");
                 jd.AddCommand<SystemJdVersionCommand>("version").WithDescription("Show JDownloader version.");
                 jd.AddCommand<SystemJdRevisionCommand>("revision").WithDescription("Show JDownloader core revision.");
                 jd.AddCommand<SystemJdUptimeCommand>("uptime").WithDescription("Show JDownloader uptime.");
@@ -295,12 +310,14 @@ public static class CliApplication
             });
             system.AddBranch("os", os =>
             {
+                os.SetDescription("Operating system power operations.");
                 os.AddCommand<SystemOsShutdownCommand>("shutdown").WithDescription("Shutdown the operating system.");
                 os.AddCommand<SystemOsHibernateCommand>("hibernate").WithDescription("Hibernate the operating system.");
                 os.AddCommand<SystemOsStandbyCommand>("standby").WithDescription("Put the operating system into standby.");
             });
             system.AddBranch("update", update =>
             {
+                update.SetDescription("Update lifecycle operations.");
                 update.AddCommand<SystemUpdateCheckCommand>("check").WithDescription("Check whether updates are available.");
                 update.AddCommand<SystemUpdateRunCommand>("run").WithDescription("Run update check.");
                 update.AddCommand<SystemUpdateRestartCommand>("restart").WithDescription("Restart and apply updates.");
@@ -316,6 +333,7 @@ public static class CliApplication
             advanced.SetDescription("Expert-only escape hatches and raw access.");
             advanced.AddBranch("content", content =>
             {
+                content.SetDescription("Binary icons and content endpoints.");
                 content.AddCommand<AdvancedContentIconCommand>("icon").WithDescription("Fetch an icon by key (binary).");
                 content.AddCommand<AdvancedContentFavIconCommand>("favicon").WithDescription("Fetch a favicon by URL (binary).");
                 content.AddCommand<AdvancedContentFileIconCommand>("file-icon").WithDescription("Fetch a file icon by extension (binary).");
@@ -323,6 +341,7 @@ public static class CliApplication
             });
             advanced.AddBranch("dialogs", dialogs =>
             {
+                dialogs.SetDescription("Inspect and answer advanced dialogs.");
                 dialogs.AddCommand<AdvancedDialogsListCommand>("list").WithDescription("List open dialogs.");
                 dialogs.AddCommand<AdvancedDialogsGetCommand>("get").WithDescription("Get a dialog by id.");
                 dialogs.AddCommand<AdvancedDialogsAnswerCommand>("answer").WithDescription("Answer a dialog.");
@@ -330,10 +349,12 @@ public static class CliApplication
             });
             advanced.AddBranch("ingest", ingest =>
             {
+                ingest.SetDescription("Ingest helper endpoints.");
                 ingest.AddCommand<AdvancedIngestCnlCommand>("cnl").WithDescription("Ingest a Click'n'Load (CNL) payload.");
             });
             advanced.AddBranch("raw", raw =>
             {
+                raw.SetDescription("Raw endpoint escape hatch.");
                 raw.AddCommand<AdvancedRawRequestCommand>("request").WithDescription("Send a raw My.JDownloader endpoint request.");
             });
         });

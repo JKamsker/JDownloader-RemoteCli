@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Config;
 using JDownloader.Cli.Runtime;
@@ -8,6 +9,7 @@ namespace JDownloader.Cli.Commands.Auth;
 public sealed class RemoveProfileSettings : GlobalSettings
 {
     [CommandArgument(0, "<NAME>")]
+    [Description("Profile name to remove.")]
     public required string Name { get; init; }
 }
 

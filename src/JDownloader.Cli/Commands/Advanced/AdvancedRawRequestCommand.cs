@@ -8,7 +8,8 @@ namespace JDownloader.Cli.Commands.Advanced;
 
 public sealed class RawRequestSettings : DeviceCommandSettings
 {
-    [CommandArgument(0, "<PATH>")]
+    [CommandArgument(0, "<ENDPOINT>")]
+    [Description("My.JDownloader endpoint path (or full URL). Example: /downloadsV2/queryLinks.")]
     public required string Path { get; init; }
 
     [CommandOption("--method <METHOD>")]

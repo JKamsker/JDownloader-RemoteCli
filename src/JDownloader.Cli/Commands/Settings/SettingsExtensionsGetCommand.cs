@@ -70,7 +70,7 @@ public sealed class SettingsExtensionsGetCommand : DeviceApiCommand<SettingsExte
             result.Warnings);
     }
 
-    private static List<Dictionary<string, object?>> ToDictionaryList(object data)
+    private static List<Dictionary<string, object?>> ToDictionaryList(object? data)
     {
         if (data is IEnumerable<object?> sequence)
         {

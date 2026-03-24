@@ -1,0 +1,4 @@
+- [x] Fix docs mismatches for settings commands (plugins/extensions) (`docs/Common_UseCases/07_Settings.md`, `src/JDownloader.Cli/Bootstrap/CliApplication.cs`).
+- [x] Improve CLI help: add missing `SetDescription(...)` for nested branches (`src/JDownloader.Cli/Bootstrap/CliApplication.cs`).
+- [x] Improve CLI help: add `[Description]` for positional args in auth profile commands and clarify `advanced raw request` arg placeholder (`src/JDownloader.Cli/Commands/Auth/*`, `src/JDownloader.Cli/Commands/Advanced/AdvancedRawRequestCommand.cs`).
+- [x] Tweak global option wording: device name matching is case-insensitive (`src/JDownloader.Cli/Runtime/GlobalSettings.cs`).
