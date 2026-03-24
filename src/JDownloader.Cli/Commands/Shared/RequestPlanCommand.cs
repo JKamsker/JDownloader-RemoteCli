@@ -24,13 +24,37 @@ public static class RequestPlanCommandBase
 
         return new CommandOutput(
             data,
-            [
+            BuildHumanLines(resolved, plan));
+    }
+
+    private static IReadOnlyList<string> BuildHumanLines(ResolvedProfileContext resolved, MyJdRequestPlan plan)
+    {
+        var lines = new List<string>
+        {
                 "Dry-run only. No changes were applied.",
                 $"Profile: {resolved.ProfileName}",
                 $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
                 $"Method: {plan.Method}",
                 $"Endpoint: {plan.Endpoint}",
-            ]);
+            };
+
+        AppendSection(lines, "Query", plan.Query);
+        AppendSection(lines, "Body", plan.Body);
+        return lines;
+    }
+
+    private static void AppendSection(List<string> lines, string title, object? value)
+    {
+        if (value is null)
+            return;
+
+        var rendered = HumanDataRenderer.Render(value);
+        if (rendered is not { Count: > 0 })
+            return;
+
+        lines.Add($"{title}:");
+        foreach (var line in rendered)
+            lines.Add($"  {line}");
     }
 }
 

@@ -12,10 +12,6 @@ public sealed class RawRequestSettings : DeviceCommandSettings
     [Description("My.JDownloader endpoint path (or full URL). Example: /downloadsV2/queryLinks.")]
     public required string Path { get; init; }
 
-    [CommandOption("--method <METHOD>")]
-    [Description("My.JDownloader relay calls are always POST. Only POST is accepted.")]
-    public string? Method { get; init; }
-
     [CommandOption("--query-json <JSON>")]
     [Description("Raw query JSON or @file.")]
     public string? QueryJson { get; init; }
@@ -53,12 +49,6 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RawRequestSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
     {
         var producesBinary = !string.IsNullOrWhiteSpace(settings.OutputFile);
-
-        if (!string.IsNullOrWhiteSpace(settings.Method)
-            && !string.Equals(settings.Method.Trim(), "POST", StringComparison.OrdinalIgnoreCase))
-        {
-            throw CliException.Usage("My.JDownloader relay device calls are always POST; '--method' only supports POST.");
-        }
 
         var endpoint = NormalizeEndpoint(settings.Path);
         var plan = new MyJdRequestPlan(
@@ -100,14 +90,23 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
                 result.Warnings);
         }
 
+        var humanLines = new List<string>
+        {
+            $"Path: {plan.Endpoint}",
+            $"Profile: {resolved.ProfileName}",
+            $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
+        };
+
+        var renderedData = HumanDataRenderer.Render(result.Data);
+        if (renderedData is { Count: > 0 })
+        {
+            humanLines.Add(string.Empty);
+            humanLines.AddRange(renderedData);
+        }
+
         return new CommandOutput(
             result.Data,
-            [
-                $"Path: {plan.Endpoint}",
-                $"Method: {plan.Method}",
-                $"Profile: {resolved.ProfileName}",
-                $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
-            ],
+            humanLines,
             result.Warnings);
     }
 

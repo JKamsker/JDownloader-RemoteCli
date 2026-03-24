@@ -11,11 +11,12 @@ if command -v dotnet >/dev/null 2>&1; then
   if [[ "$dotnet_major" =~ ^[0-9]+$ ]] && [[ "$dotnet_major" -ge 10 ]]; then
     echo "Running dotnet format (pre-commit)..."
 
-    dotnet tool restore >/dev/null
     dotnet restore --verbosity minimal >/dev/null
 
     if command -v pwsh >/dev/null 2>&1; then
       pwsh -NoProfile -ExecutionPolicy Bypass -File "scripts/format-oneline-csharp.ps1"
+    else
+      echo "pwsh not found; skipping scripts/format-oneline-csharp.ps1." >&2
     fi
 
     dotnet format whitespace "src/JDownloader.Cli/JDownloader.Cli.csproj" --verbosity minimal --no-restore

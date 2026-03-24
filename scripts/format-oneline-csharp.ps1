@@ -175,7 +175,7 @@ foreach ($file in $targets) {
 
     $updated = Expand-CSharp $content
     if ($updated -ne $content) {
-        Set-Content -Path $file.FullName -Value $updated -NoNewline
+        Set-Content -Path $file.FullName -Value $updated -NoNewline -Encoding utf8NoBOM
         $changed++
     }
 }

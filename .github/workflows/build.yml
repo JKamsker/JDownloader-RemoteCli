@@ -34,9 +34,6 @@ jobs:
     - name: Restore
       run: dotnet restore
 
-    - name: Tool restore
-      run: dotnet tool restore
-
     - name: Format (verify)
       run: |
         dotnet format whitespace src/JDownloader.Cli/JDownloader.Cli.csproj --verify-no-changes --no-restore --verbosity minimal
@@ -79,6 +76,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
     - name: Download NuGet Package
       uses: actions/download-artifact@v4
       with:
@@ -96,8 +98,13 @@ jobs:
     - name: Upload to NuGet.org
       if: github.event_name == 'push'
       run: |
-        dotnet nuget push "nuget-packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
-        dotnet nuget push "nuget-packages/*.snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        shopt -s nullglob
+        for package in nuget-packages/*.nupkg; do
+          dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        done
+        for symbols in nuget-packages/*.snupkg; do
+          dotnet nuget push "$symbols" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        done
         echo "Upload complete"
         echo "Version: ${{ needs.build.outputs.version }}"
         echo "Build Number: ${{ github.run_number }}"
