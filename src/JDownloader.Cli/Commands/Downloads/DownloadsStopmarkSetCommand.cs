@@ -60,9 +60,7 @@ public sealed class DownloadsStopmarkSetCommand : DeviceApiCommand<DownloadsStop
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'downloads stopmark set' will update the stop mark.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'downloads stopmark set' will update the stop mark.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

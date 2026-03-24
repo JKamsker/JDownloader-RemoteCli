@@ -24,15 +24,18 @@
 - [x] Add positional-parameter mapper support for captcha/events/config/extraction endpoints (avoid sending `{...}` as a single param): `/captcha/*`, `/captchaforward/*`, `/events/*`, `/config/list`, `/extraction/setArchiveSettings`
 - [x] Fix `downloads stopmark clear` to use documented `/downloadsV2/removeStopMark` (0-arg) instead of `/downloadsV2/setStopMark` sentinels
 - [x] Make 0-arg download controller commands not accept selector/body flags (`downloads status|speed|start|stop`) and make `grabber clear` a true 0-arg command
-- [ ] Make profile-aware output mode apply to non-device commands (`JD2_OUTPUT` / saved profile `output` for `auth status/whoami/logout` and `device list/use`)
-- [ ] Make `--dry-run` honor “no mutation” for auth/profile/device mutators (`auth logout`, `auth profiles add|use|rename`, `device use`, etc.)
+- [x] Make profile-aware output mode apply to non-device commands (`JD2_OUTPUT` / saved profile `output` for `auth status/whoami/logout` and `device list/use`)
+- [x] Make `--dry-run` honor “no mutation” for auth/profile/device mutators (`auth logout`, `auth profiles add|use|rename`, `device use`, etc.)
 - [x] Reject query/body flags on 0-arg endpoints still using `FixedRequestPlanCommand` (system info/jd version/reconnect/update*, extraction queue)
 - [x] Make query endpoints error on `--body-json` (currently silently ignored for `*/queryLinks`, `*/queryPackages`, `/extensions/list`, `/plugins/list`, `/accountsV2/listAccounts`)
 - [x] Fix settings extensions commands to match docs: implement `/extensions/setEnabled` and adjust `enable/disable` UX (and ensure `extensions list/get` can see `id`/`classname`)
-- [ ] Align auth login profile resolution: if multiple profiles exist and no default, require `--profile` instead of silently creating/using `default`
-- [ ] Make `device use` ambiguity rules match resolver (don’t pick first match)
-- [ ] Avoid deleting shared credentials when removing a profile (only delete email creds if no other profile references it)
+- [x] Align auth login profile resolution: if multiple profiles exist and no default, require `--profile` instead of silently creating/using `default`
+- [x] Make `device use` ambiguity rules match resolver (don’t pick first match)
+- [x] Avoid deleting shared credentials when removing a profile (only delete email creds if no other profile references it)
 - [x] Add `--dry-run` to `accounts get` and clarify its purpose (premium hoster URL)
-- [ ] Fix docs drift: Windows path escaping, JSON envelope shape (omit nulls), and exit code meanings in `docs/Common_UseCases/05_Scripting_And_Automation.md`
-- [ ] Decide how to handle confirmation semantics: remove dead `if (!proceed)` branches or change `ConfirmationGuard` to return `false` on “no”
+- [x] Fix docs drift: Windows path escaping, JSON envelope shape (omit nulls), and exit code meanings in `docs/Common_UseCases/05_Scripting_And_Automation.md`
+- [x] Decide how to handle confirmation semantics: remove dead `if (!proceed)` branches or change `ConfirmationGuard` to return `false` on “no”
 - [ ] (Optional) Improve help UX: add leaf command descriptions in `src/JDownloader.Cli/Bootstrap/CliApplication.cs`
+- [x] Align accounts ID parameter keys with docs (`ids` vs `accountIds`/`basicAuthIds`)
+- [x] Tighten 0-arg endpoints in `MyJdParameterMapper` (add `EnsureNoParameters` for `/device/ping`, `/device/getDirectConnectionInfos`, `/downloadcontroller/*`, `/linkgrabberv2/clearList`, `/system/exitJD`, `/system/restartJD`, `/toolbar/toggle*`)
+- [x] Make `captcha skip --type` required (or add explicit legacy/deprecated mode)

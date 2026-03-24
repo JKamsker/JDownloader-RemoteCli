@@ -84,9 +84,7 @@ public sealed class SettingsConfigSetCommand : DeviceApiCommand<SettingsConfigSe
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"'settings config set' will update '{settings.Key.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, $"'settings config set' will update '{settings.Key.Trim()}'.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

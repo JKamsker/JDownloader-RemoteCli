@@ -72,11 +72,9 @@ public sealed class AccountsUpdateCommand : DeviceApiCommand<AccountsUpdateSetti
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'accounts update' will update credentials for account {settings.AccountId.Value}.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,

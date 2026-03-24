@@ -43,7 +43,7 @@ public sealed class AccountsDisableCommand : DeviceApiCommand<AccountsDisableSet
             "accounts.disable",
             "POST",
             "/accountsV2/disableAccounts",
-            new Dictionary<string, object?> { ["accountIds"] = settings.AccountIds },
+            new Dictionary<string, object?> { ["ids"] = settings.AccountIds },
             null,
             true,
             false,
@@ -52,11 +52,9 @@ public sealed class AccountsDisableCommand : DeviceApiCommand<AccountsDisableSet
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'accounts disable' will disable {settings.AccountIds.Length} account(s).");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

@@ -5,25 +5,26 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Auth;
 
-public sealed class AuthStatusCommand : AnonymousCommand<NoArgSettings>
+public sealed class AuthStatusCommand : ProfileApiCommand<NoArgSettings>
 {
     private readonly IMyJdAuthService _authService;
-    private readonly IProfileResolver _profileResolver;
 
     public AuthStatusCommand(
         IMyJdAuthService authService,
         IProfileResolver profileResolver,
         IOutputRenderer outputRenderer,
         IDiagnosticLogger diagnosticLogger)
-        : base(outputRenderer, diagnosticLogger)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
         _authService = authService;
-        _profileResolver = profileResolver;
     }
 
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        NoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var status = await _authService.GetStatusAsync(resolved.ProfileName, cancellationToken);
         return new CommandOutput(
             status,

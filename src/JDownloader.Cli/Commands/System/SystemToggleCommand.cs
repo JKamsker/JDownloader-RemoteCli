@@ -61,9 +61,7 @@ public sealed class SystemToggleCommand : DeviceApiCommand<SystemToggleSettings>
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"'system toggle {name}' will change remote state.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, $"'system toggle {name}' will change remote state.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(
@@ -72,4 +70,3 @@ public sealed class SystemToggleCommand : DeviceApiCommand<SystemToggleSettings>
             result.Warnings);
     }
 }
-

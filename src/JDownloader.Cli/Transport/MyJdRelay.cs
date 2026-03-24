@@ -13,7 +13,12 @@ public sealed record MyJdDeviceSummary(string Id, string Name, string? Type, str
 
 public interface IDeviceCatalog
 {
-    Task<IReadOnlyList<ResolvedDevice>> SyncAsync(string profileName, string? accountEmail, int timeoutSeconds, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ResolvedDevice>> SyncAsync(
+        string profileName,
+        string? accountEmail,
+        int timeoutSeconds,
+        bool persist,
+        CancellationToken cancellationToken);
 }
 
 public interface IMyJdRelayClient
@@ -37,6 +42,7 @@ public sealed class DeviceCatalog : IDeviceCatalog
         string profileName,
         string? accountEmail,
         int timeoutSeconds,
+        bool persist,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(accountEmail))
@@ -47,6 +53,9 @@ public sealed class DeviceCatalog : IDeviceCatalog
             .Where(device => !string.IsNullOrWhiteSpace(device.Id))
             .Select(device => new ResolvedDevice(device.Id, string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name))
             .ToList();
+
+        if (!persist)
+            return resolved;
 
         var config = await _profileStore.LoadAsync(cancellationToken);
         if (!config.Profiles.TryGetValue(profileName, out var profile))
@@ -515,6 +524,21 @@ internal static class MyJdParameterMapper
             "/accountsV2/listAccounts" => BuildJsonStringParameter(
                 BuildAccountsQuery(EnsureNoBody(plan, "accounts list does not accept --body-json."), out var warnings),
                 warnings),
+            "/device/ping" => EnsureNoParameters(plan, "device ping does not accept query/body parameters."),
+            "/device/getDirectConnectionInfos" => EnsureNoParameters(plan, "device direct-info does not accept query/body parameters."),
+            "/downloadcontroller/getCurrentState" => EnsureNoParameters(plan, "downloads status does not accept query/body parameters."),
+            "/downloadcontroller/getSpeedInBps" => EnsureNoParameters(plan, "downloads speed does not accept query/body parameters."),
+            "/downloadcontroller/start" => EnsureNoParameters(plan, "downloads start does not accept query/body parameters."),
+            "/downloadcontroller/stop" => EnsureNoParameters(plan, "downloads stop does not accept query/body parameters."),
+            "/linkgrabberv2/clearList" => EnsureNoParameters(plan, "grabber clear does not accept query/body parameters."),
+            "/system/exitJD" => EnsureNoParameters(plan, "system jd exit does not accept query/body parameters."),
+            "/system/restartJD" => EnsureNoParameters(plan, "system jd restart does not accept query/body parameters."),
+            "/toolbar/toggleAutomaticReconnect" => EnsureNoParameters(plan, "system toggle automatic-reconnect does not accept query/body parameters."),
+            "/toolbar/toggleClipboardMonitoring" => EnsureNoParameters(plan, "system toggle clipboard-monitoring does not accept query/body parameters."),
+            "/toolbar/toggleDownloadSpeedLimit" => EnsureNoParameters(plan, "system toggle speed-limit does not accept query/body parameters."),
+            "/toolbar/togglePauseDownloads" => EnsureNoParameters(plan, "system toggle pause does not accept query/body parameters."),
+            "/toolbar/togglePremium" => EnsureNoParameters(plan, "system toggle premium does not accept query/body parameters."),
+            "/toolbar/toggleStopAfterCurrentDownload" => EnsureNoParameters(plan, "system toggle stop-after-current does not accept query/body parameters."),
             "/accountsV2/disableAccounts" => BuildLongArrayParameters(
                 plan.Query,
                 ["accountIds", "ids"],

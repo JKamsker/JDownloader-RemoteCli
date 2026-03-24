@@ -52,12 +52,9 @@ public sealed class DownloadsPackagesRemoveCommand : DeviceApiCommand<DownloadsP
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'downloads packages remove' will remove selected download packages.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'downloads packages remove' will remove selected download packages.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
     }
 }
-

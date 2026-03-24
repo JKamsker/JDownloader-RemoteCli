@@ -23,20 +23,39 @@ public sealed class AddProfileCommand : AnonymousCommand<AddProfileSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, AddProfileSettings settings, CancellationToken cancellationToken)
     {
+        var name = settings.Name.Trim();
         var config = await _profileStore.LoadAsync(cancellationToken);
-        if (config.Profiles.ContainsKey(settings.Name))
-            throw CliException.Conflict($"Profile '{settings.Name}' already exists.");
+        if (config.Profiles.ContainsKey(name))
+            throw CliException.Conflict($"Profile '{name}' already exists.");
 
-        config.Profiles[settings.Name] = new ProfileRecord
+        var wouldSetDefault = string.IsNullOrWhiteSpace(config.DefaultProfile);
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new
+                {
+                    action = "dry-run",
+                    name,
+                    wouldCreate = true,
+                    wouldSetDefaultProfile = wouldSetDefault,
+                },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Would create profile '{name}'.",
+                    wouldSetDefault ? "Would set it as default profile." : "Would not change default profile.",
+                ]);
+        }
+
+        config.Profiles[name] = new ProfileRecord
         {
             Output = settings.Output,
             TimeoutSeconds = settings.TimeoutSeconds,
         };
-        config.DefaultProfile ??= settings.Name;
+        config.DefaultProfile ??= name;
         await _profileStore.SaveAsync(config, cancellationToken);
 
         return new CommandOutput(
-            new { name = settings.Name, created = true },
-            [$"Created profile '{settings.Name}'."]);
+            new { name, created = true },
+            [$"Created profile '{name}'."]);
     }
 }

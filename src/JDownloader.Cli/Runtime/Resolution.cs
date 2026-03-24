@@ -157,11 +157,11 @@ public sealed class ProfileResolver : IProfileResolver
             return (null, null);
 
         if (resolveDeviceSelectors && !string.IsNullOrWhiteSpace(settings.Device))
-            return await ResolveExplicitDeviceAsync(profile, settings.Device, "flag", profileName, timeoutSeconds, cancellationToken);
+            return await ResolveExplicitDeviceAsync(profile, settings.Device, "flag", profileName, timeoutSeconds, persist: !settings.DryRun, cancellationToken);
 
         var envDevice = _environment.GetEnvironmentVariable("JD2_DEVICE");
         if (resolveDeviceSelectors && !string.IsNullOrWhiteSpace(envDevice))
-            return await ResolveExplicitDeviceAsync(profile, envDevice, "env", profileName, timeoutSeconds, cancellationToken);
+            return await ResolveExplicitDeviceAsync(profile, envDevice, "env", profileName, timeoutSeconds, persist: !settings.DryRun, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(profile.DefaultDeviceId) || !string.IsNullOrWhiteSpace(profile.DefaultDeviceName))
             return await ResolveExplicitDeviceAsync(
@@ -170,6 +170,7 @@ public sealed class ProfileResolver : IProfileResolver
                 "profile-default",
                 profileName,
                 timeoutSeconds,
+                persist: !settings.DryRun,
                 cancellationToken);
 
         if (profile.KnownDevices.Count == 1)
@@ -180,7 +181,7 @@ public sealed class ProfileResolver : IProfileResolver
 
         if (requireDevice && !string.IsNullOrWhiteSpace(profile.AccountEmail))
         {
-            var liveDevices = await _deviceCatalog.SyncAsync(profileName, profile.AccountEmail, timeoutSeconds, cancellationToken);
+            var liveDevices = await _deviceCatalog.SyncAsync(profileName, profile.AccountEmail, timeoutSeconds, persist: !settings.DryRun, cancellationToken);
             if (liveDevices.Count == 1)
                 return (liveDevices[0], "live-single-device-inference");
         }
@@ -201,6 +202,7 @@ public sealed class ProfileResolver : IProfileResolver
         string source,
         string profileName,
         int timeoutSeconds,
+        bool persist,
         CancellationToken cancellationToken)
     {
         try
@@ -209,7 +211,7 @@ public sealed class ProfileResolver : IProfileResolver
         }
         catch (CliException ex) when (ex.Kind == "not_found" && !string.IsNullOrWhiteSpace(profile.AccountEmail))
         {
-            var liveDevices = await _deviceCatalog.SyncAsync(profileName, profile.AccountEmail, timeoutSeconds, cancellationToken);
+            var liveDevices = await _deviceCatalog.SyncAsync(profileName, profile.AccountEmail, timeoutSeconds, persist, cancellationToken);
             return (FindDevice(ToProfile(liveDevices), lookup, $"{source}/live"), $"{source}/live");
         }
     }
@@ -251,7 +253,7 @@ public sealed class ProfileResolver : IProfileResolver
 
         throw CliException.NotFound(
             $"Device '{trimmed}' was not found in the selected profile.",
-            "Run 'jd2 device list' or update the profile default device.");
+            "Run 'jdr device list' or update the profile default device.");
     }
 
     private static ProfileRecord ToProfile(IReadOnlyList<ResolvedDevice> devices)

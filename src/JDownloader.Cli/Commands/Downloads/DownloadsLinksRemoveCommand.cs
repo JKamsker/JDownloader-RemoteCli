@@ -57,12 +57,10 @@ public sealed class DownloadsLinksRemoveCommand : DeviceApiCommand<DownloadsLink
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'downloads links remove' will remove selected download links.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
-
         if (settings.LinkIds.Length == 0 && settings.PackageIds.Length == 0)
             throw CliException.Usage("downloads links remove requires at least one --link-id <id> or --package-id <id>.");
+
+        await _confirmationGuard.AuthorizeAsync(settings, "'downloads links remove' will remove selected download links.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

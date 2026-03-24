@@ -41,9 +41,7 @@ public sealed class SystemJdExitCommand : DeviceApiCommand<DeviceNoArgSettings>
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'system jd exit' will exit JDownloader on the selected device.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'system jd exit' will exit JDownloader on the selected device.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);

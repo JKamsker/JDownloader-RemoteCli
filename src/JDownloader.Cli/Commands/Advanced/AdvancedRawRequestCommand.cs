@@ -12,7 +12,7 @@ public sealed class RawRequestSettings : DeviceCommandSettings
     public required string Path { get; init; }
 
     [CommandOption("--method <METHOD>")]
-    [Description("HTTP method to plan. Defaults to POST.")]
+    [Description("My.JDownloader relay calls are always POST. Only POST is accepted.")]
     public string? Method { get; init; }
 
     [CommandOption("--query-json <JSON>")]
@@ -75,11 +75,9 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
 
         if (plan.Destructive)
         {
-            var proceed = await _confirmationGuard.AuthorizeAsync(
+            await _confirmationGuard.AuthorizeAsync(
                 settings,
                 $"'advanced raw request' will execute a destructive call to '{plan.Endpoint}'.");
-            if (!proceed)
-                return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
         }
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);

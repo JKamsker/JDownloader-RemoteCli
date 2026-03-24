@@ -4,23 +4,23 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Auth;
 
-public sealed class WhoAmICommand : AnonymousCommand<NoArgSettings>
+public sealed class WhoAmICommand : ProfileApiCommand<NoArgSettings>
 {
-    private readonly IProfileResolver _profileResolver;
-
     public WhoAmICommand(
         IProfileResolver profileResolver,
         IOutputRenderer outputRenderer,
         IDiagnosticLogger diagnosticLogger)
-        : base(outputRenderer, diagnosticLogger)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-        _profileResolver = profileResolver;
     }
 
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
+    protected override Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        NoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
-        return new CommandOutput(
+        return Task.FromResult(new CommandOutput(
             new
             {
                 profile = resolved.ProfileName,
@@ -35,6 +35,6 @@ public sealed class WhoAmICommand : AnonymousCommand<NoArgSettings>
                 $"Profile source: {resolved.ProfileSource}",
                 $"Output mode: {resolved.OutputMode}",
                 $"Timeout: {resolved.TimeoutSeconds}s",
-            ]);
+            ]));
     }
 }

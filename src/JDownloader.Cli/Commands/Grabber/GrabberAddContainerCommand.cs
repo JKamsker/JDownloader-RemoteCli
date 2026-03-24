@@ -74,12 +74,9 @@ public sealed class GrabberAddContainerCommand : DeviceApiCommand<GrabberAddCont
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'grabber add-container' will add a container to the linkgrabber.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'grabber add-container' will add a container to the linkgrabber.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
     }
 }
-

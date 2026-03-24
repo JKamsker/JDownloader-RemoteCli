@@ -14,9 +14,8 @@ public sealed class UseDeviceSettings : GlobalSettings
     public string? DeviceName { get; init; }
 }
 
-public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
+public sealed class UseDeviceCommand : ProfileApiCommand<UseDeviceSettings>
 {
-    private readonly IProfileResolver _profileResolver;
     private readonly IProfileStore _profileStore;
     private readonly IDeviceCatalog _deviceCatalog;
 
@@ -26,20 +25,22 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
         IProfileStore profileStore,
         IOutputRenderer outputRenderer,
         IDiagnosticLogger diagnosticLogger)
-        : base(outputRenderer, diagnosticLogger)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-        _profileResolver = profileResolver;
         _deviceCatalog = deviceCatalog;
         _profileStore = profileStore;
     }
 
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, UseDeviceSettings settings, CancellationToken cancellationToken)
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        UseDeviceSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(settings.Device))
             throw CliException.Usage("device use requires --device <id-or-name>.");
 
         var deviceValue = settings.Device.Trim();
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var config = await _profileStore.LoadAsync(cancellationToken);
 
         ProfileRecord profileRecord;
@@ -53,13 +54,20 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
             profileRecord = profile;
         }
 
-        var match = FindMatch(profileRecord, deviceValue);
+        var match = FindMatch(profileRecord, deviceValue, source: "local cache");
         if (match is null && !string.IsNullOrWhiteSpace(profileRecord.AccountEmail))
         {
             try
             {
-                await _deviceCatalog.SyncAsync(resolved.ProfileName, profileRecord.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
-                config = await _profileStore.LoadAsync(cancellationToken);
+                var liveDevices = await _deviceCatalog.SyncAsync(
+                    resolved.ProfileName,
+                    profileRecord.AccountEmail,
+                    resolved.TimeoutSeconds,
+                    persist: !settings.DryRun,
+                    cancellationToken);
+
+                if (!settings.DryRun)
+                    config = await _profileStore.LoadAsync(cancellationToken);
 
                 if (!config.Profiles.TryGetValue(resolved.ProfileName, out profile) || profile is null)
                 {
@@ -71,7 +79,23 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
                     profileRecord = profile;
                 }
 
-                match = FindMatch(profileRecord, deviceValue);
+                if (settings.DryRun)
+                {
+                    var liveProfile = new ProfileRecord
+                    {
+                        KnownDevices = liveDevices.Select(device => new KnownDeviceRecord
+                        {
+                            Id = device.Id,
+                            Name = device.Name,
+                            SeenAtUtc = DateTimeOffset.UtcNow,
+                        }).ToList(),
+                    };
+                    match = FindMatch(liveProfile, deviceValue, source: "live sync");
+                }
+                else
+                {
+                    match = FindMatch(profileRecord, deviceValue, source: "live sync");
+                }
             }
             catch (CliException ex) when (ex.Kind is "not_authenticated" or "transport")
             {
@@ -97,6 +121,23 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
 
         profileRecord.DefaultDeviceId = selected.Id;
         profileRecord.DefaultDeviceName = selected.Name;
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new
+                {
+                    action = "dry-run",
+                    profile = resolved.ProfileName,
+                    device = new { selected.Id, selected.Name },
+                    wouldPersist = true,
+                },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Profile: {resolved.ProfileName}",
+                    $"Would set default device to {selected.Name} ({selected.Id}).",
+                ]);
+        }
+
         await _profileStore.SaveAsync(config, cancellationToken);
 
         return new CommandOutput(
@@ -104,11 +145,26 @@ public sealed class UseDeviceCommand : AnonymousCommand<UseDeviceSettings>
             [$"Default device for profile '{resolved.ProfileName}' set to {selected.Name} ({selected.Id})."]);
     }
 
-    private static KnownDeviceRecord? FindMatch(ProfileRecord profile, string lookup)
+    private static KnownDeviceRecord? FindMatch(ProfileRecord profile, string lookup, string source)
     {
-        return profile.KnownDevices.FirstOrDefault(device =>
-            string.Equals(device.Id, lookup, StringComparison.Ordinal)
-            || string.Equals(device.Name, lookup, StringComparison.Ordinal)
-            || string.Equals(device.Name, lookup, StringComparison.OrdinalIgnoreCase));
+        var byId = profile.KnownDevices.Where(device => string.Equals(device.Id, lookup, StringComparison.Ordinal)).ToList();
+        if (byId.Count == 1)
+            return byId[0];
+        if (byId.Count > 1)
+            throw CliException.Usage($"Device value '{lookup}' is ambiguous in {source} resolution.");
+
+        var byName = profile.KnownDevices.Where(device => string.Equals(device.Name, lookup, StringComparison.Ordinal)).ToList();
+        if (byName.Count == 1)
+            return byName[0];
+        if (byName.Count > 1)
+            throw CliException.Usage($"Device name '{lookup}' is ambiguous in {source} resolution.");
+
+        var byCaseInsensitiveName = profile.KnownDevices.Where(device => string.Equals(device.Name, lookup, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (byCaseInsensitiveName.Count == 1)
+            return byCaseInsensitiveName[0];
+        if (byCaseInsensitiveName.Count > 1)
+            throw CliException.Usage($"Device name '{lookup}' matches multiple devices in {source} resolution.");
+
+        return null;
     }
 }

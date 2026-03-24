@@ -43,7 +43,7 @@ public sealed class AccountsBasicAuthRemoveCommand : DeviceApiCommand<AccountsBa
             "accounts.basic-auth.remove",
             "POST",
             "/accountsV2/removeBasicAuths",
-            new Dictionary<string, object?> { ["basicAuthIds"] = settings.BasicAuthIds },
+            new Dictionary<string, object?> { ["ids"] = settings.BasicAuthIds },
             null,
             true,
             false,
@@ -52,11 +52,9 @@ public sealed class AccountsBasicAuthRemoveCommand : DeviceApiCommand<AccountsBa
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'accounts basic-auth remove' will remove {settings.BasicAuthIds.Length} basic auth entr{(settings.BasicAuthIds.Length == 1 ? "y" : "ies")}.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

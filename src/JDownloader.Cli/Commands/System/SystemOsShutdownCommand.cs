@@ -49,11 +49,9 @@ public sealed class SystemOsShutdownCommand : DeviceApiCommand<SystemOsShutdownS
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'system os shutdown' will shut down the OS on the selected device (force={settings.Force.ToString().ToLowerInvariant()}).");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);

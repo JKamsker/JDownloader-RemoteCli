@@ -60,11 +60,9 @@ public sealed class GrabberVariantsSetCommand : DeviceApiCommand<GrabberVariants
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'grabber variants set' will assign variant '{settings.VariantId.Trim()}' to link {settings.LinkId.Value}.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(

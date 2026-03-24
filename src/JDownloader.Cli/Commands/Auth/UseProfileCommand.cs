@@ -23,12 +23,23 @@ public sealed class UseProfileCommand : AnonymousCommand<UseProfileSettings>
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, UseProfileSettings settings, CancellationToken cancellationToken)
     {
+        var name = settings.Name.Trim();
         var config = await _profileStore.LoadAsync(cancellationToken);
-        if (!config.Profiles.ContainsKey(settings.Name))
-            throw CliException.NotFound($"Profile '{settings.Name}' was not found.");
+        if (!config.Profiles.ContainsKey(name))
+            throw CliException.NotFound($"Profile '{name}' was not found.");
 
-        config.DefaultProfile = settings.Name;
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new { action = "dry-run", defaultProfile = name },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Would set default profile to '{name}'.",
+                ]);
+        }
+
+        config.DefaultProfile = name;
         await _profileStore.SaveAsync(config, cancellationToken);
-        return new CommandOutput(new { defaultProfile = settings.Name }, [$"Default profile set to '{settings.Name}'."]);
+        return new CommandOutput(new { defaultProfile = name }, [$"Default profile set to '{name}'."]);
     }
 }

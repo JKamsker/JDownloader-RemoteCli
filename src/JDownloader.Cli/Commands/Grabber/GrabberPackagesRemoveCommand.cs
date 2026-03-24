@@ -52,12 +52,9 @@ public sealed class GrabberPackagesRemoveCommand : DeviceApiCommand<GrabberPacka
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'grabber packages remove' will remove selected linkgrabber packages.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'grabber packages remove' will remove selected linkgrabber packages.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
     }
 }
-

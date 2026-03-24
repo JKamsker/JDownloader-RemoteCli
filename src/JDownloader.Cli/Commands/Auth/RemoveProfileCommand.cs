@@ -29,26 +29,57 @@ public sealed class RemoveProfileCommand : AnonymousCommand<RemoveProfileSetting
 
     protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RemoveProfileSettings settings, CancellationToken cancellationToken)
     {
-        var preview = new CommandOutput(new { profile = settings.Name, preview = true }, [$"Would remove profile '{settings.Name}'."]);
-        if (settings.DryRun)
-            return preview;
-
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"Remove profile '{settings.Name}'?");
-        if (!proceed)
-            return preview;
-
+        var name = settings.Name.Trim();
         var config = await _profileStore.LoadAsync(cancellationToken);
-        if (!config.Profiles.TryGetValue(settings.Name, out var profile))
-            throw CliException.NotFound($"Profile '{settings.Name}' was not found.");
+        if (!config.Profiles.TryGetValue(name, out var profile))
+            throw CliException.NotFound($"Profile '{name}' was not found.");
 
-        config.Profiles.Remove(settings.Name);
-        if (string.Equals(config.DefaultProfile, settings.Name, StringComparison.OrdinalIgnoreCase))
-            config.DefaultProfile = config.Profiles.Keys.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+        var accountEmail = profile?.AccountEmail;
+        var wouldRemoveCredentials = !string.IsNullOrWhiteSpace(accountEmail)
+            && !config.Profiles.Any(pair => !string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(pair.Value?.AccountEmail)
+                && string.Equals(pair.Value!.AccountEmail, accountEmail, StringComparison.OrdinalIgnoreCase));
 
-        if (!string.IsNullOrWhiteSpace(profile.AccountEmail))
-            config.Credentials.Remove(profile.AccountEmail);
+        var wouldUpdateDefaultProfile = string.Equals(config.DefaultProfile, name, StringComparison.OrdinalIgnoreCase);
+        var nextDefault = wouldUpdateDefaultProfile
+            ? config.Profiles.Keys
+                .Where(candidate => !string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(candidate => candidate, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault()
+            : config.DefaultProfile;
+
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new
+                {
+                    action = "dry-run",
+                    profile = name,
+                    wouldRemoveCredentials,
+                    nextDefaultProfile = nextDefault,
+                },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Would remove profile '{name}'.",
+                    wouldUpdateDefaultProfile
+                        ? $"Would update default profile to '{nextDefault ?? "(none)"}'."
+                        : "Would not change default profile.",
+                    wouldRemoveCredentials
+                        ? "Would remove stored credentials for the profile email."
+                        : "Would keep stored credentials (shared by another profile).",
+                ]);
+        }
+
+        await _confirmationGuard.AuthorizeAsync(settings, $"Remove profile '{name}'?");
+
+        config.Profiles.Remove(name);
+        if (wouldUpdateDefaultProfile)
+            config.DefaultProfile = nextDefault;
+
+        if (wouldRemoveCredentials)
+            config.Credentials.Remove(accountEmail!);
 
         await _profileStore.SaveAsync(config, cancellationToken);
-        return new CommandOutput(new { profile = settings.Name, removed = true }, [$"Removed profile '{settings.Name}'."]);
+        return new CommandOutput(new { profile = name, removed = true }, [$"Removed profile '{name}'."]);
     }
 }

@@ -89,11 +89,9 @@ public sealed class AccountsBasicAuthUpdateCommand : DeviceApiCommand<AccountsBa
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'accounts basic-auth update' will update the basic auth entry for '{settings.Hostmask.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,

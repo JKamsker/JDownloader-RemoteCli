@@ -72,11 +72,9 @@ public sealed class AccountsAddCommand : DeviceApiCommand<AccountsAddSettings>
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(
+        await _confirmationGuard.AuthorizeAsync(
             settings,
             $"'accounts add' will add account '{settings.Username.Trim()}' for '{settings.Hoster.Trim()}'.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, previewPlan);
 
         var password = await SecretInput.ReadSecretAsync(
             settings.Password,

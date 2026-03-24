@@ -90,9 +90,7 @@ public sealed class GrabberAddCommand : DeviceApiCommand<GrabberAddSettings>
         if (settings.DryRun)
             return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
 
-        var proceed = await _confirmationGuard.AuthorizeAsync(settings, "'grabber add' will add links to the linkgrabber.");
-        if (!proceed)
-            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        await _confirmationGuard.AuthorizeAsync(settings, "'grabber add' will add links to the linkgrabber.");
 
         var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
         return new CommandOutput(result.Data, HumanDataRenderer.Render(result.Data), result.Warnings);
@@ -161,4 +159,3 @@ public sealed class GrabberAddCommand : DeviceApiCommand<GrabberAddSettings>
         return query;
     }
 }
-

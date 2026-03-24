@@ -43,6 +43,19 @@ public sealed class LoginCommand : AnonymousCommand<LoginSettings>
         if (string.IsNullOrWhiteSpace(settings.Email))
             throw CliException.Usage("auth login requires --email <email>.");
 
+        var profileName = await ResolveLoginProfileNameAsync(settings, cancellationToken);
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new { action = "dry-run", profile = profileName, email = settings.Email.Trim() },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Profile: {profileName}",
+                    $"Email: {settings.Email.Trim()}",
+                    "Would perform login and store encrypted auth material (and ensure a key file exists).",
+                ]);
+        }
+
         if ((settings.Json || settings.Quiet) && !settings.PasswordStdin)
         {
             throw CliException.Usage(
@@ -57,7 +70,6 @@ public sealed class LoginCommand : AnonymousCommand<LoginSettings>
         if (string.IsNullOrWhiteSpace(password))
             throw CliException.Usage("Password input was empty.");
 
-        var profileName = await ResolveLoginProfileNameAsync(settings, cancellationToken);
         var result = await _authService.LoginAsync(settings.Email, password, profileName, cancellationToken);
 
         return new CommandOutput(
@@ -92,7 +104,12 @@ public sealed class LoginCommand : AnonymousCommand<LoginSettings>
         if (config.Profiles.Count == 1)
             return config.Profiles.Keys.Single();
 
-        return "default";
+        if (config.Profiles.Count == 0)
+            return "default";
+
+        throw CliException.Usage(
+            "Profile is required because multiple profiles exist and no default profile could be resolved.",
+            "Pass --profile <name> or run 'jdr auth profiles use <name>'.");
     }
 
     private static string ReadPasswordInteractively()

@@ -1,5 +1,6 @@
 
 .agents/skills
+.tmp/
 
 bin/
 obj/

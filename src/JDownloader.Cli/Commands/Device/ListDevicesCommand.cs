@@ -6,9 +6,8 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Device;
 
-public sealed class ListDevicesCommand : AnonymousCommand<NoArgSettings>
+public sealed class ListDevicesCommand : ProfileApiCommand<NoArgSettings>
 {
-    private readonly IProfileResolver _profileResolver;
     private readonly IProfileStore _profileStore;
     private readonly IDeviceCatalog _deviceCatalog;
 
@@ -18,18 +17,21 @@ public sealed class ListDevicesCommand : AnonymousCommand<NoArgSettings>
         IProfileStore profileStore,
         IOutputRenderer outputRenderer,
         IDiagnosticLogger diagnosticLogger)
-        : base(outputRenderer, diagnosticLogger)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-        _profileResolver = profileResolver;
         _deviceCatalog = deviceCatalog;
         _profileStore = profileStore;
     }
 
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        NoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
         var warnings = new List<string>();
         var config = await _profileStore.LoadAsync(cancellationToken);
+        IReadOnlyList<ResolvedDevice>? liveDevices = null;
 
         ProfileRecord profileRecord;
         if (!config.Profiles.TryGetValue(resolved.ProfileName, out var profile) || profile is null)
@@ -47,12 +49,25 @@ public sealed class ListDevicesCommand : AnonymousCommand<NoArgSettings>
         {
             try
             {
-                await _deviceCatalog.SyncAsync(resolved.ProfileName, profileRecord.AccountEmail, resolved.TimeoutSeconds, cancellationToken);
-                config = await _profileStore.LoadAsync(cancellationToken);
-                if (!config.Profiles.TryGetValue(resolved.ProfileName, out profile) || profile is null)
-                    profileRecord = new ProfileRecord();
+                liveDevices = await _deviceCatalog.SyncAsync(
+                    resolved.ProfileName,
+                    profileRecord.AccountEmail,
+                    resolved.TimeoutSeconds,
+                    persist: !settings.DryRun,
+                    cancellationToken);
+
+                if (!settings.DryRun)
+                {
+                    config = await _profileStore.LoadAsync(cancellationToken);
+                    if (!config.Profiles.TryGetValue(resolved.ProfileName, out profile) || profile is null)
+                        profileRecord = new ProfileRecord();
+                    else
+                        profileRecord = profile;
+                }
                 else
-                    profileRecord = profile;
+                {
+                    warnings.Add("Dry-run: device cache was not updated.");
+                }
             }
             catch (CliException ex) when ((ex.Kind == "not_authenticated" || ex.Kind == "transport") && hasKnownDevices)
             {
@@ -60,7 +75,16 @@ public sealed class ListDevicesCommand : AnonymousCommand<NoArgSettings>
             }
         }
 
-        var items = profileRecord.KnownDevices.Select(device => new
+        var devices = (liveDevices?.Count > 0
+            ? liveDevices.Select(device => new KnownDeviceRecord
+            {
+                Id = device.Id,
+                Name = device.Name,
+                SeenAtUtc = DateTimeOffset.UtcNow,
+            })
+            : profileRecord.KnownDevices).ToList();
+
+        var items = devices.Select(device => new
         {
             device.Id,
             device.Name,

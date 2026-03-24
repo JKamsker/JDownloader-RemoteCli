@@ -5,25 +5,37 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Auth;
 
-public sealed class LogoutCommand : AnonymousCommand<NoArgSettings>
+public sealed class LogoutCommand : ProfileApiCommand<NoArgSettings>
 {
     private readonly IMyJdAuthService _authService;
-    private readonly IProfileResolver _profileResolver;
 
     public LogoutCommand(
         IMyJdAuthService authService,
         IProfileResolver profileResolver,
         IOutputRenderer outputRenderer,
         IDiagnosticLogger diagnosticLogger)
-        : base(outputRenderer, diagnosticLogger)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
         _authService = authService;
-        _profileResolver = profileResolver;
     }
 
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, NoArgSettings settings, CancellationToken cancellationToken)
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        NoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
     {
-        var resolved = await _profileResolver.ResolveAsync(settings, requireDevice: false, resolveDeviceSelectors: false, cancellationToken);
+        if (settings.DryRun)
+        {
+            return new CommandOutput(
+                new { action = "dry-run", profile = resolved.ProfileName, loggedOut = true },
+                [
+                    "Dry-run only. No changes were applied.",
+                    $"Profile: {resolved.ProfileName}",
+                    "Would remove stored auth material.",
+                ]);
+        }
+
         await _authService.LogoutAsync(resolved.ProfileName, cancellationToken);
         return new CommandOutput(
             new { profile = resolved.ProfileName, loggedOut = true },

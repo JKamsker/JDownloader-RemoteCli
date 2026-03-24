@@ -13,17 +13,19 @@ Shape (v1):
 ```json
 {
   "ok": true,
-  "data": { },
-  "error": null,
   "meta": {
-    "schemaVersion": 1,
-    "warnings": [],
-    "diagnosticLogPath": null
+    "schemaVersion": 1
   }
 }
 ```
 
 Errors set `"ok": false` and populate `"error"` with `"kind"`, `"message"`, and optionally `"recovery"`.
+
+Notes:
+
+- `data` is omitted when it is null.
+- `error` is omitted when it is null.
+- `meta.warnings` and `meta.diagnosticLogPath` are omitted when null.
 
 ## Stdout vs stderr
 
@@ -35,9 +37,12 @@ Errors set `"ok": false` and populate `"error"` with `"kind"`, `"message"`, and 
 Common exit codes:
 
 - `0`: success
+- `1`: unexpected client error
 - `2`: usage / validation error
 - `3`: not authenticated
 - `5`: not found
-- `6`: conflict / ambiguous resolution
+- `6`: conflict
 - `8`: transport error (remote call failed)
+- `10`: cancelled (user declined confirmation)
 
+Ambiguous selectors (for example a device name matching multiple devices) currently surface as a usage/validation error (`2`).

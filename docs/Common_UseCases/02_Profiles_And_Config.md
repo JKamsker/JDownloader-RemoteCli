@@ -32,7 +32,7 @@ Environment variables:
 
 Defaults by OS:
 
-- Windows: `%APPDATA%\\jd2\\`
+- Windows: `%APPDATA%\jd2\`
 - macOS: `~/Library/Application Support/jd2/`
 - Linux: `$XDG_CONFIG_HOME/jd2/` or `~/.config/jd2/`
 
@@ -45,4 +45,3 @@ jdr downloads status --json
 ```
 
 To persist a default output mode per profile, set it in your profile record (or use `JD2_OUTPUT=json`).
-

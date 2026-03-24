@@ -32,9 +32,7 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
             if (settings.DryRun)
                 return BuildPreviewOutput(resolved, plan);
 
-            var proceed = await _confirmationGuard.AuthorizeAsync(settings, $"'{context.Name}' is destructive.");
-            if (!proceed)
-                return BuildPreviewOutput(resolved, plan);
+            await _confirmationGuard.AuthorizeAsync(settings, $"'{context.Name}' is destructive.");
         }
         else if (settings.DryRun)
         {
