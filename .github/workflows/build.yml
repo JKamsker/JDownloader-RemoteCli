@@ -66,6 +66,9 @@ jobs:
         dotnet format whitespace src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verify-no-changes --no-restore --verbosity minimal
         dotnet format style src/JDownloader.Cli.Tests/JDownloader.Cli.Tests.csproj --verify-no-changes --no-restore --verbosity minimal
 
+    - name: C# LOC + partial guard
+      run: bash scripts/check-csharp-guidelines.sh
+
     - name: Build
       run: |
         dotnet build --configuration Release \

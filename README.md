@@ -101,4 +101,4 @@ This repo uses `dotnet format`. To enable the committed pre-commit hook:
 git config core.hooksPath .githooks
 ```
 
-The hook only formats staged C# files and the repo pins the required .NET SDK via `global.json`.
+The hook only formats staged C# files, then runs the shared C# guideline check (`scripts/check-csharp-guidelines.sh`) to warn above 300 lines, fail above 500 lines, and reject non-generated `partial` type declarations unless they are explicitly excluded. The repo pins the required .NET SDK via `global.json`, and CI runs the same C# check.
