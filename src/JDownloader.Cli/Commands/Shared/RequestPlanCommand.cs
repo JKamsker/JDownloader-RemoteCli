@@ -4,48 +4,8 @@ using Spectre.Console.Cli;
 
 namespace JDownloader.Cli.Commands.Shared;
 
-public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSettings>
+public static class RequestPlanCommandBase
 {
-    private readonly IMyJdTransport _transport;
-    private readonly IConfirmationGuard _confirmationGuard;
-
-    protected RequestPlanCommandBase(
-        IProfileResolver profileResolver,
-        IOutputRenderer outputRenderer,
-        IDiagnosticLogger diagnosticLogger,
-        IMyJdTransport transport,
-        IConfirmationGuard confirmationGuard)
-        : base(profileResolver, outputRenderer, diagnosticLogger)
-    {
-        _transport = transport;
-        _confirmationGuard = confirmationGuard;
-    }
-
-    protected abstract MyJdRequestPlan CreatePlan(CommandContext context, RequestCommandSettings settings, ResolvedProfileContext resolved);
-    protected virtual IReadOnlyList<string>? RenderHumanData(object? data) => HumanDataRenderer.Render(data);
-
-    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, RequestCommandSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
-    {
-        var plan = CreatePlan(context, settings, resolved);
-        if (plan.Destructive)
-        {
-            if (settings.DryRun)
-                return BuildPreviewOutput(resolved, plan);
-
-            await _confirmationGuard.AuthorizeAsync(settings, $"'{context.Name}' is destructive.");
-        }
-        else if (settings.DryRun)
-        {
-            return BuildPreviewOutput(resolved, plan);
-        }
-
-        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
-        return new CommandOutput(
-            result.Data,
-            RenderHumanData(result.Data),
-            result.Warnings);
-    }
-
     public static CommandOutput BuildPreviewOutput(ResolvedProfileContext resolved, MyJdRequestPlan plan)
     {
         var data = new
@@ -72,8 +32,52 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
                 $"Endpoint: {plan.Endpoint}",
             ]);
     }
+}
 
-    protected static Dictionary<string, object?> BuildSelectorQuery(RequestCommandSettings settings)
+public abstract class RequestPlanCommandBase<TSettings> : DeviceApiCommand<TSettings>
+    where TSettings : DeviceCommandSettings, IRequestPlanSelectorSettings
+{
+    private readonly IMyJdTransport _transport;
+    private readonly IConfirmationGuard _confirmationGuard;
+
+    protected RequestPlanCommandBase(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport,
+        IConfirmationGuard confirmationGuard)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
+    {
+        _transport = transport;
+        _confirmationGuard = confirmationGuard;
+    }
+
+    protected abstract MyJdRequestPlan CreatePlan(CommandContext context, TSettings settings, ResolvedProfileContext resolved);
+    protected virtual IReadOnlyList<string>? RenderHumanData(object? data) => HumanDataRenderer.Render(data);
+
+    protected override async Task<CommandOutput> ExecuteCoreAsync(CommandContext context, TSettings settings, ResolvedProfileContext resolved, CancellationToken cancellationToken)
+    {
+        var plan = CreatePlan(context, settings, resolved);
+        if (plan.Destructive)
+        {
+            if (settings.DryRun)
+                return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+            await _confirmationGuard.AuthorizeAsync(settings, $"'{context.Name}' is destructive.");
+        }
+        else if (settings.DryRun)
+        {
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+        }
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(
+            result.Data,
+            RenderHumanData(result.Data),
+            result.Warnings);
+    }
+
+    protected static Dictionary<string, object?> BuildSelectorQuery(TSettings settings)
     {
         var queryOverride = JsonInput.ParseOptional(settings.QueryJson);
         if (queryOverride is not null)
@@ -81,9 +85,7 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
             if (!string.IsNullOrWhiteSpace(settings.Fields)
                 || settings.Limit is not null
                 || settings.Offset is not null
-                || settings.LinkIds.Length > 0
-                || settings.PackageIds.Length > 0
-                || settings.Hosters.Length > 0)
+                || (settings is RequestCommandSettings withPackages && withPackages.PackageIds.Length > 0))
             {
                 throw CliException.Usage("Do not combine selector flags with --query-json. Put the full query object in --query-json or omit it.");
             }
@@ -101,23 +103,15 @@ public abstract class RequestPlanCommandBase : DeviceApiCommand<RequestCommandSe
             query["limit"] = settings.Limit;
         if (settings.Offset is not null)
             query["offset"] = settings.Offset;
-        if (settings.LinkIds.Length > 0)
-            query["linkIds"] = settings.LinkIds;
-        if (settings.PackageIds.Length > 0)
-            query["packageIds"] = settings.PackageIds;
-        if (settings.Hosters.Length > 0)
-            query["hosters"] = settings.Hosters;
+        if (settings is RequestCommandSettings withPackageIds && withPackageIds.PackageIds.Length > 0)
+            query["packageIds"] = withPackageIds.PackageIds;
 
         return query;
     }
-
-    protected static object? BuildBody(RequestCommandSettings settings)
-    {
-        return JsonInput.ParseOptional(settings.BodyJson);
-    }
 }
 
-public abstract class FixedRequestPlanCommand : RequestPlanCommandBase
+public abstract class FixedRequestPlanCommand<TSettings> : RequestPlanCommandBase<TSettings>
+    where TSettings : DeviceCommandSettings, IRequestPlanSelectorSettings
 {
     protected FixedRequestPlanCommand(
         IProfileResolver profileResolver,
@@ -135,14 +129,14 @@ public abstract class FixedRequestPlanCommand : RequestPlanCommandBase
     protected virtual bool Destructive => false;
     protected virtual bool ProducesBinary => false;
 
-    protected override MyJdRequestPlan CreatePlan(CommandContext context, RequestCommandSettings settings, ResolvedProfileContext resolved)
+    protected override MyJdRequestPlan CreatePlan(CommandContext context, TSettings settings, ResolvedProfileContext resolved)
     {
         return new MyJdRequestPlan(
             Operation,
             Method,
             Endpoint,
             BuildSelectorQuery(settings),
-            BuildBody(settings),
+            null,
             Destructive,
             ProducesBinary,
             resolved.Device?.Id);

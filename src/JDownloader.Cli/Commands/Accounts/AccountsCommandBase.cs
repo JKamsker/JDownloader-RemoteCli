@@ -4,7 +4,7 @@ using JDownloader.Cli.Transport;
 
 namespace JDownloader.Cli.Commands.Accounts;
 
-public abstract class AccountsCommandBase : FixedRequestPlanCommand
+public abstract class AccountsCommandBase : FixedRequestPlanCommand<RequestCommandSettingsNoPackage>
 {
     protected AccountsCommandBase(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e) { }
 }
