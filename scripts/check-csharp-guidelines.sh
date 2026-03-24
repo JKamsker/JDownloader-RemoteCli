@@ -18,6 +18,7 @@ Checks non-generated C# files for:
 - hard LOC limit (> 500 lines fails)
 - soft LOC guidance (> 300 lines warns)
 - partial type declarations (fails unless excluded)
+- filename shards such as Foo.Bar.cs beside Foo.cs (fails unless excluded)
 
 With --staged, reads staged Git content instead of the working tree.
 Without explicit files, checks tracked *.cs files (or staged *.cs files with --staged).
@@ -73,9 +74,40 @@ count_lines() {
   load_content "$file" | awk 'END { print NR + 0 }'
 }
 
+has_file() {
+  local file="$1"
+
+  if [[ "$check_staged" -eq 1 ]]; then
+    git cat-file -e ":$file" 2>/dev/null
+  else
+    [[ -f "$file" ]]
+  fi
+}
+
 find_partial_declarations() {
   local file="$1"
   load_content "$file" | grep -nE '^[[:space:]]*((public|internal|private|protected|file|sealed|abstract|static|unsafe|readonly|ref|new)[[:space:]]+)*partial[[:space:]]+(class|record|struct|interface)([[:space:]]|$)' || true
+}
+
+find_type_shard_violation() {
+  local file="$1"
+  local directory base_name stem sibling
+
+  directory="$(dirname "$file")"
+  base_name="$(basename "$file" .cs)"
+  if [[ "$base_name" != *.* ]]; then
+    return 0
+  fi
+
+  stem="${base_name%%.*}"
+  sibling="$directory/$stem.cs"
+  if [[ "$sibling" == "$file" ]]; then
+    return 0
+  fi
+
+  if has_file "$sibling"; then
+    printf '%s\n' "$sibling"
+  fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -117,11 +149,7 @@ for raw_file in "${files[@]}"; do
     continue
   fi
 
-  if [[ "$check_staged" -eq 1 ]]; then
-    if ! git cat-file -e ":$file" 2>/dev/null; then
-      continue
-    fi
-  elif [[ ! -f "$file" ]]; then
+  if ! has_file "$file"; then
     continue
   fi
 
@@ -141,6 +169,13 @@ for raw_file in "${files[@]}"; do
       echo "  $match" >&2
     done <<< "$partial_matches"
     echo "  Add a justified exclusion in $exclude_file only when a partial type is genuinely required." >&2
+    failed=1
+  fi
+
+  shard_parent="$(find_type_shard_violation "$file")"
+  if [[ -n "$shard_parent" ]]; then
+    echo "ERROR: $file looks like a split shard of $shard_parent. Use a separately named helper type instead of filename sharding." >&2
+    echo "  Add a justified exclusion in $exclude_file only when this filename pattern is genuinely required." >&2
     failed=1
   fi
 done

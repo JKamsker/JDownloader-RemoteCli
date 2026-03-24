@@ -12,7 +12,7 @@ git config core.hooksPath .githooks
 
 - Expands one-line staged C# files into a readable multi-line format (via `scripts/format-oneline-csharp.ps1`, when `pwsh` is available).
 - Runs `dotnet format` (whitespace + style) only for staged C# files and re-stages those files before allowing the commit.
-- Runs `scripts/check-csharp-guidelines.sh --staged` to enforce the C# LOC policy (`<= 500`, warn above `300`) and reject non-generated `partial` type declarations unless explicitly excluded.
+- Runs `scripts/check-csharp-guidelines.sh --staged` to enforce the C# LOC policy (`<= 500`, warn above `300`), reject non-generated `partial` type declarations, and reject `Foo.Bar.cs`-style filename sharding next to `Foo.cs` unless explicitly excluded.
 
 Notes:
 
