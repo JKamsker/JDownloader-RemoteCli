@@ -1,14 +1,48 @@
+using JDownloader.Cli.Commands.Shared;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using Spectre.Console.Cli;
+
 namespace JDownloader.Cli.Commands.Accounts;
 
-public sealed class AccountsHostersListCommand : AccountsCommandBase
+public sealed class AccountsHostersListCommand : DeviceApiCommand<DeviceNoArgSettings>
 {
-    public AccountsHostersListCommand(IProfileResolver a, IOutputRenderer b, IDiagnosticLogger c, IMyJdTransport d, IConfirmationGuard e) : base(a, b, c, d, e)
+    private readonly IMyJdTransport _transport;
+
+    public AccountsHostersListCommand(
+        IProfileResolver profileResolver,
+        IOutputRenderer outputRenderer,
+        IDiagnosticLogger diagnosticLogger,
+        IMyJdTransport transport)
+        : base(profileResolver, outputRenderer, diagnosticLogger)
     {
-
+        _transport = transport;
     }
-    protected override string Operation => "accounts.hosters.list";
-    protected override string Endpoint => "/accountsV2/listPremiumHoster";
 
+    protected override async Task<CommandOutput> ExecuteCoreAsync(
+        CommandContext context,
+        DeviceNoArgSettings settings,
+        ResolvedProfileContext resolved,
+        CancellationToken cancellationToken)
+    {
+        var plan = new MyJdRequestPlan(
+            "accounts.hosters.list",
+            "POST",
+            "/accountsV2/listPremiumHoster",
+            null,
+            null,
+            false,
+            false,
+            resolved.Device?.Id);
+
+        if (settings.DryRun)
+            return RequestPlanCommandBase.BuildPreviewOutput(resolved, plan);
+
+        var result = await _transport.ExecuteAsync(resolved, plan, cancellationToken);
+        return new CommandOutput(
+            result.Data,
+            HumanDataRenderer.Render(result.Data),
+            result.Warnings);
+    }
 }
+

@@ -220,7 +220,7 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
         {
             throw CliException.NotAuthenticated(
                 "Authentication required for protected commands.",
-                $"Run 'jd2 auth login --profile {profileName} --email <email> --password-stdin'.");
+                $"Run 'jdr auth login --profile {profileName} --email <email> --password-stdin'.");
         }
 
         var normalizedEmail = accountEmail.Trim().ToLowerInvariant();
@@ -229,7 +229,7 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
         {
             throw CliException.NotAuthenticated(
                 "Authentication required for protected commands.",
-                $"Run 'jd2 auth login --profile {profileName} --email {normalizedEmail} --password-stdin'.");
+                $"Run 'jdr auth login --profile {profileName} --email {normalizedEmail} --password-stdin'.");
         }
 
         StoredAuthMaterial? authMaterial;
@@ -250,14 +250,14 @@ public sealed class MyJdRelayClient : IMyJdRelayClient
         {
             throw CliException.NotAuthenticated(
                 "Stored auth material could not be decrypted.",
-                $"Run 'jd2 auth login --profile {profileName} --email {normalizedEmail} --password-stdin'.");
+                $"Run 'jdr auth login --profile {profileName} --email {normalizedEmail} --password-stdin'.");
         }
 
         if (string.IsNullOrWhiteSpace(authMaterial.ServerSecretHex) || string.IsNullOrWhiteSpace(authMaterial.DeviceSecretHex))
         {
             throw CliException.NotAuthenticated(
                 "Saved auth material is from the initial scaffold and cannot authenticate live relay calls.",
-                $"Run 'jd2 auth login --profile {profileName} --email {normalizedEmail} --password-stdin' once to refresh it.");
+                $"Run 'jdr auth login --profile {profileName} --email {normalizedEmail} --password-stdin' once to refresh it.");
         }
 
         return new StoredRelayAuth(

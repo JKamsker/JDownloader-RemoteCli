@@ -1,11 +1,13 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using JDownloader.Cli.Runtime;
 
 namespace JDownloader.Cli.Config;
 
 public interface IKeyFileProvider
 {
+    Task<byte[]?> TryReadKeyAsync(CancellationToken cancellationToken);
     Task<byte[]> GetOrCreateKeyAsync(CancellationToken cancellationToken);
     string GetKeyFilePath();
 }
@@ -27,17 +29,34 @@ public sealed class FileKeyFileProvider : IKeyFileProvider
 
     public async Task<byte[]> GetOrCreateKeyAsync(CancellationToken cancellationToken)
     {
-        var path = GetKeyFilePath();
-        if (File.Exists(path))
-        {
-            var pem = await File.ReadAllTextAsync(path, cancellationToken);
-            return Convert.FromBase64String(pem);
-        }
+        var existing = await TryReadKeyAsync(cancellationToken);
+        if (existing is not null)
+            return existing;
 
+        var path = GetKeyFilePath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var key = RandomNumberGenerator.GetBytes(32);
         await File.WriteAllTextAsync(path, Convert.ToBase64String(key), cancellationToken);
         return key;
+    }
+
+    public async Task<byte[]?> TryReadKeyAsync(CancellationToken cancellationToken)
+    {
+        var path = GetKeyFilePath();
+        if (!File.Exists(path))
+            return null;
+
+        var pem = await File.ReadAllTextAsync(path, cancellationToken);
+        try
+        {
+            return Convert.FromBase64String(pem);
+        }
+        catch (FormatException)
+        {
+            throw CliException.Usage(
+                $"Key file '{path}' is invalid and could not be read.",
+                "Restore the key file from backup, or delete it and re-run 'jdr auth login' to recreate credentials.");
+        }
     }
 
     public string GetKeyFilePath() => _paths.GetKeyFilePath();
@@ -57,7 +76,7 @@ public sealed class AesCredentialProtector : ICredentialProtector
     {
         var salt = RandomNumberGenerator.GetBytes(16);
         var nonce = RandomNumberGenerator.GetBytes(AesGcm.NonceByteSizes.MaxSize);
-        var key = await DeriveKeyAsync(salt, cancellationToken);
+        var key = await DeriveKeyAsync(salt, createIfMissing: true, cancellationToken);
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(value);
         var ciphertext = new byte[plaintext.Length];
         var tag = new byte[AesGcm.TagByteSizes.MaxSize];
@@ -95,7 +114,7 @@ public sealed class AesCredentialProtector : ICredentialProtector
 
         var nonce = Convert.FromBase64String(blob.NonceBase64);
         var salt = Convert.FromBase64String(blob.SaltBase64);
-        var key = await DeriveKeyAsync(salt, cancellationToken);
+        var key = await DeriveKeyAsync(salt, createIfMissing: false, cancellationToken);
         var plaintext = new byte[ciphertext.Length];
 
         using var aes = new AesGcm(key, tag.Length);
@@ -103,9 +122,21 @@ public sealed class AesCredentialProtector : ICredentialProtector
         return JsonSerializer.Deserialize<T>(plaintext);
     }
 
-    private async Task<byte[]> DeriveKeyAsync(byte[] salt, CancellationToken cancellationToken)
+    private async Task<byte[]> DeriveKeyAsync(byte[] salt, bool createIfMissing, CancellationToken cancellationToken)
     {
-        var sidecarKey = await _keyFileProvider.GetOrCreateKeyAsync(cancellationToken);
+        byte[] sidecarKey;
+        if (createIfMissing)
+        {
+            sidecarKey = await _keyFileProvider.GetOrCreateKeyAsync(cancellationToken);
+        }
+        else
+        {
+            sidecarKey = await _keyFileProvider.TryReadKeyAsync(cancellationToken)
+                ?? throw CliException.NotAuthenticated(
+                    $"Key file '{_keyFileProvider.GetKeyFilePath()}' was not found; stored credentials cannot be decrypted.",
+                    "Restore the key file from backup, or re-run 'jdr auth login' to recreate stored auth material.");
+        }
+
         return Rfc2898DeriveBytes.Pbkdf2(sidecarKey, salt, 100_000, HashAlgorithmName.SHA256, 32);
     }
 }

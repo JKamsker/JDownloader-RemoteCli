@@ -70,7 +70,7 @@ jdr
 - Output and errors:
   - Human output goes to stdout; prompts, warnings, and diagnostics go to stderr.
   - `--json` emits the envelope on stdout for success and expected failures.
-  - Exit codes: `0` success, `1` unexpected, `2` usage or validation or non-interactive refusal, `3` not authenticated, `4` not authorized, `5` not found, `6` conflict or precondition, `7` rate limited, `8` transport or timeout, `10` explicit cancel.
+  - Exit codes: `0` success, `1` unexpected, `2` usage/validation/non-interactive refusal (including ambiguous selectors), `3` not authenticated, `5` not found, `6` conflict, `8` transport/timeout, `10` explicit cancel.
 - Confirmation rules:
   - Require confirmation for destructive or disruptive operations such as remove, cleanup, clear, cancel, JD restart or exit, OS shutdown or hibernate or standby, reconnect, and update restart.
   - `--dry-run` prints the resolved device plus the exact API request plan and never mutates.

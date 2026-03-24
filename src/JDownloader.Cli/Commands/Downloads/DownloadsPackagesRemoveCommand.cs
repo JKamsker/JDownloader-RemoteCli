@@ -43,7 +43,7 @@ public sealed class DownloadsPackagesRemoveCommand : DeviceApiCommand<DownloadsP
             "downloads.packages.remove",
             "POST",
             "/downloadsV2/removeLinks",
-            new Dictionary<string, object?> { ["packageIds"] = settings.PackageIds },
+            new Dictionary<string, object?> { ["linkIds"] = Array.Empty<long>(), ["packageIds"] = settings.PackageIds },
             null,
             true,
             false,

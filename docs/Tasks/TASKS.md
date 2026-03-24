@@ -39,3 +39,7 @@
 - [x] Align accounts ID parameter keys with docs (`ids` vs `accountIds`/`basicAuthIds`)
 - [x] Tighten 0-arg endpoints in `MyJdParameterMapper` (add `EnsureNoParameters` for `/device/ping`, `/device/getDirectConnectionInfos`, `/downloadcontroller/*`, `/linkgrabberv2/clearList`, `/system/exitJD`, `/system/restartJD`, `/toolbar/toggle*`)
 - [x] Make `captcha skip --type` required (or add explicit legacy/deprecated mode)
+- [x] Prevent key file creation during decrypt (avoid local mutation, especially in `--dry-run`)
+- [x] Convert remaining 0-arg fixed-plan commands to real no-arg settings (system update/info/jd*, accounts hosters/basic-auth list)
+- [x] Align `downloads packages remove` / `grabber packages remove` query shape (include `linkIds: []` for doc parity)
+- [x] Align `docs/Tasks/Initial.md` exit codes with implementation and remove `jd2` references in recovery hints

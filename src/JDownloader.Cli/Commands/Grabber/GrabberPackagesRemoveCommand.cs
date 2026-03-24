@@ -43,7 +43,7 @@ public sealed class GrabberPackagesRemoveCommand : DeviceApiCommand<GrabberPacka
             "grabber.packages.remove",
             "POST",
             "/linkgrabberv2/removeLinks",
-            new Dictionary<string, object?> { ["packageIds"] = settings.PackageIds },
+            new Dictionary<string, object?> { ["linkIds"] = Array.Empty<long>(), ["packageIds"] = settings.PackageIds },
             null,
             true,
             false,
