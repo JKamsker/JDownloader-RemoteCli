@@ -44,6 +44,15 @@ public sealed class LoginCommand : AnonymousCommand<LoginSettings>
             throw CliException.Usage("auth login requires --email <email>.");
 
         var profileName = await ResolveLoginProfileNameAsync(settings, cancellationToken);
+        var existing = await _profileStore.LoadAsync(cancellationToken);
+        if (existing.Profiles.TryGetValue(profileName, out var existingProfile)
+            && ConnectionModes.Parse(existingProfile.Mode) == ConnectionMode.Direct)
+        {
+            throw CliException.Usage(
+                $"Profile '{profileName}' is a direct connection and does not use a My.JDownloader account.",
+                "Pick a different profile with --profile, or create one with 'jdr connection add <name> --mode myjd'.");
+        }
+
         if (settings.DryRun)
         {
             return new CommandOutput(

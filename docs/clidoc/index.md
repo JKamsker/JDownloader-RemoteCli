@@ -1,6 +1,6 @@
 # jdr
 
-- Version: `0.1.0+934021c5d15736906d9daf73c28f4ae953ac2bb8`
+- Version: `0.1.0+6dd86e43afbd0371e7788fb56426d6c59205e9a0`
 - OpenCLI: `0.1-draft`
 
 Command-line reference for `jdr`. Available command areas include authentication, system, accounts, grabber, downloads, advanced, and more.
@@ -10,9 +10,9 @@ Command-line reference for `jdr`. Available command areas include authentication
 
 ### CLI Scope
 
-- Top-level command groups: `12`
-- Documented commands: `145`
-- Leaf commands: `112`
+- Top-level command groups: `13`
+- Documented commands: `152`
+- Leaf commands: `118`
 
 ### Available Commands
 
@@ -20,6 +20,7 @@ Command-line reference for `jdr`. Available command areas include authentication
 - [advanced](advanced/index.md) — Expert-only escape hatches and raw access.
 - [auth](auth/index.md) — Authentication, identity, and saved profiles.
 - [captcha](captcha/index.md) — Inspect and answer captcha jobs.
+- [connection](connection/index.md) — Manage saved connections: direct (local JDownloader API) or My.JDownloader.
 - [device](device/index.md) — Resolve, inspect, and select JDownloader devices.
 - [doctor](doctor.md) — Inspect config paths, resolution, and stored auth state.
 - [downloads](downloads/index.md) — Inspect and control active downloads.

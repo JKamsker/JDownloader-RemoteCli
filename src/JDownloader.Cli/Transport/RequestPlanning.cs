@@ -68,7 +68,7 @@ public static class JsonInput
         }
     }
 
-    private static object? ConvertElement(JsonElement element)
+    internal static object? ConvertElement(JsonElement element)
     {
         return element.ValueKind switch
         {

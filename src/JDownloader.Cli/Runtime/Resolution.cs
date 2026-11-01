@@ -17,7 +17,12 @@ public sealed record ResolvedProfileContext(
     int TimeoutSeconds,
     string TimeoutSource,
     ResolvedDevice? Device,
-    string? DeviceSource);
+    string? DeviceSource,
+    ConnectionMode ConnectionMode = ConnectionMode.MyJd,
+    DirectEndpoint? Direct = null)
+{
+    public bool IsDirect => ConnectionMode == ConnectionMode.Direct;
+}
 
 public interface IProfileResolver
 {
@@ -46,6 +51,13 @@ public sealed class ProfileResolver : IProfileResolver
 
         var (outputMode, outputSource) = ResolveOutputMode(settings, profile);
         var (timeoutSeconds, timeoutSource) = ResolveTimeout(settings, profile);
+        var connectionMode = ConnectionModes.Parse(profile.Mode);
+        if (connectionMode == ConnectionMode.Direct)
+        {
+            return DirectProfileContext.Create(
+                settings, profileName, profileSource, profile, outputMode, outputSource, timeoutSeconds, timeoutSource);
+        }
+
         var (device, deviceSource) = await ResolveDeviceAsync(
             settings,
             profile,

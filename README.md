@@ -4,7 +4,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/JDownloader-RemoteCli.svg)](https://www.nuget.org/packages/JDownloader-RemoteCli)
 [![CI](https://github.com/JKamsker/JDownloader-RemoteCli/actions/workflows/build.yml/badge.svg)](https://github.com/JKamsker/JDownloader-RemoteCli/actions/workflows/build.yml)
 
-A human-first command-line interface for **My.JDownloader** (remote control for JDownloader), built with .NET 10 and Spectre.Console.Cli.
+A human-first command-line interface for **JDownloader**, built with .NET 10 and Spectre.Console.Cli. It connects either through **My.JDownloader** (cloud) or **directly** to JDownloader's local HTTP API, with no account needed.
 
 - Default output is **human-friendly** (tables / concise lines).
 - Use `--json` for **stable machine-readable** output.
@@ -40,12 +40,30 @@ jdr grabber links list
 jdr grabber links list --json
 ```
 
+### Direct mode (no My.JDownloader account)
+
+Enable `deprecatedapienabled` in JDownloader's `RemoteAPIConfig` advanced settings, then:
+
+```bash
+jdr connection add local --mode direct --host 127.0.0.1 --port 3128
+jdr connection use local
+jdr connection test
+jdr downloads status
+jdr grabber links list
+```
+
+Direct mode works fully offline and never falls back to My.JDownloader. The local API is **unauthenticated and
+unencrypted**: only loopback hosts are accepted by default, and remote hosts require an explicit `--allow-remote`
+(prefer an SSH tunnel). See [docs/Common_UseCases/12_Direct_Connection.md](docs/Common_UseCases/12_Direct_Connection.md)
+for setup, security notes, diagnostics and the (few) commands that need My.JDownloader.
+
 ## Commands
 
 | Group | What it does |
 |-------|--------------|
-| `auth` | Login/logout/status, and profile management |
-| `device` | Discover/select JDownloader devices |
+| `auth` | Login/logout/status, and profile management (My.JDownloader) |
+| `connection` | Saved connections: `add --mode direct\|myjd`, `list`, `get`, `use`, `remove`, `test` |
+| `device` | Discover/select JDownloader devices (My.JDownloader) |
 | `downloads` | Status + link/package operations on the download list |
 | `grabber` | Linkgrabber ingestion/staging (links, packages, variants) |
 | `accounts` | Premium accounts + basic auth management |
@@ -81,6 +99,7 @@ Common workflow guides:
 - Authentication: [docs/Common_UseCases/01_Authentication.md](docs/Common_UseCases/01_Authentication.md)
 - Profiles & config: [docs/Common_UseCases/02_Profiles_And_Config.md](docs/Common_UseCases/02_Profiles_And_Config.md)
 - Devices: [docs/Common_UseCases/03_Devices.md](docs/Common_UseCases/03_Devices.md)
+- Direct connection (no account): [docs/Common_UseCases/12_Direct_Connection.md](docs/Common_UseCases/12_Direct_Connection.md)
 - Grabber + downloads: [docs/Common_UseCases/04_Grabber_And_Downloads.md](docs/Common_UseCases/04_Grabber_And_Downloads.md)
 - Scripting & automation: [docs/Common_UseCases/05_Scripting_And_Automation.md](docs/Common_UseCases/05_Scripting_And_Automation.md)
 - Generated CLI reference: [docs/clidoc/index.md](docs/clidoc/index.md)
@@ -102,4 +121,4 @@ This repo uses `dotnet format`. To enable the committed pre-commit hook:
 git config core.hooksPath .githooks
 ```
 
-The hook only formats staged C# files, then runs the shared C# guideline check (`scripts/check-csharp-guidelines.sh`) to warn above 300 lines, fail above 500 lines, reject non-generated `partial` type declarations, and reject `Foo.Bar.cs`-style filename sharding next to `Foo.cs` unless explicitly excluded. The repo pins the required .NET SDK via `global.json`, and CI runs the same C# check.
+The hook only formats staged C# files, then runs the shared C# guideline check (`scripts/check-csharp-guidelines.sh`) to warn above 300 lines, fail above 500 lines, reject non-generated `partial` type declarations, and reject `Foo.Bar.cs`-style filename sharding next to `Foo.cs` unless explicitly excluded. CI runs the same C# check (.NET 10 SDK required).

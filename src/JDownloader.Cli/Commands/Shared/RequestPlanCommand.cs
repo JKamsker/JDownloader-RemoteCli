@@ -36,7 +36,9 @@ public static class RequestPlanCommandBase
         {
                 "Dry-run only. No changes were applied.",
                 $"Profile: {resolved.ProfileName}",
-                $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
+                resolved.IsDirect
+                    ? $"Connection: direct ({resolved.Direct?.DisplayValue})"
+                    : $"Device: {resolved.Device?.DisplayValue ?? "(none)"}",
                 $"Method: {plan.Method}",
                 $"Endpoint: {plan.Endpoint}",
                 $"Destructive: {(plan.Destructive ? "yes" : "no")}",

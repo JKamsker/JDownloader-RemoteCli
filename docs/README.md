@@ -13,6 +13,7 @@ Common workflow guides:
 - Events: [Common_UseCases/09_Events.md](Common_UseCases/09_Events.md)
 - Captcha: [Common_UseCases/10_Captcha.md](Common_UseCases/10_Captcha.md)
 - System: [Common_UseCases/11_System.md](Common_UseCases/11_System.md)
+- Direct connection (no account): [Common_UseCases/12_Direct_Connection.md](Common_UseCases/12_Direct_Connection.md)
 - Generated CLI reference: [clidoc/index.md](clidoc/index.md)
 
 The CLI is human-first by default; use `--json` for automation.

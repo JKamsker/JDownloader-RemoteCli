@@ -9,7 +9,7 @@ Send a raw My.JDownloader endpoint request.
 
 | Name | Required | Arity | Accepted Values | Group | Description |
 | --- | --- | --- | --- | --- | --- |
-| ENDPOINT | Yes | 1 | — | — | My.JDownloader endpoint path. Example: /downloadsV2/queryLinks. |
+| ENDPOINT | Yes | 1 | — | — | Device API endpoint path (My.JDownloader or direct). Example: /downloadsV2/queryLinks. |
 
 ## Options
 

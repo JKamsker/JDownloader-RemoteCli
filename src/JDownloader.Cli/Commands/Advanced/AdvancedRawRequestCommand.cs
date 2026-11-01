@@ -9,7 +9,7 @@ namespace JDownloader.Cli.Commands.Advanced;
 public sealed class RawRequestSettings : DeviceCommandSettings
 {
     [CommandArgument(0, "<ENDPOINT>")]
-    [Description("My.JDownloader endpoint path. Example: /downloadsV2/queryLinks.")]
+    [Description("Device API endpoint path (My.JDownloader or direct). Example: /downloadsV2/queryLinks.")]
     public required string Path { get; init; }
 
     [CommandOption("--query-json <JSON>")]

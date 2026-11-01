@@ -12,6 +12,7 @@ internal static class DocumentationExampleConventions
         ["advanced raw request"] = ["advanced", "raw", "request", "/downloadsV2/queryLinks", "--query-json", "{}"],
         ["auth login"] = ["auth", "login", "--email", "demo@example.com", "--password-stdin"],
         ["captcha solve"] = ["captcha", "solve", "--id", "12345", "--result", "secret"],
+        ["connection add"] = ["connection", "add", "local", "--mode", "direct", "--host", "127.0.0.1", "--port", "3128"],
         ["device use"] = ["device", "use", "--device", "jd-main"],
         ["downloads stopmark set"] = ["downloads", "stopmark", "set", "--link-id", "12345", "--package-id", "67890"],
         ["events set"] = ["events", "set", "--subscription-id", "12345", "--subscription", "linkgrabber"],

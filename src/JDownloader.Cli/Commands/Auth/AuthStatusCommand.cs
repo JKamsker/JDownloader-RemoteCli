@@ -25,6 +25,23 @@ public sealed class AuthStatusCommand : ProfileApiCommand<NoArgSettings>
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        if (resolved.IsDirect)
+        {
+            return new CommandOutput(
+                new
+                {
+                    profile = resolved.ProfileName,
+                    mode = ConnectionModes.DirectName,
+                    endpoint = resolved.Direct?.DisplayValue,
+                    authRequired = false,
+                },
+                [
+                    $"Profile: {resolved.ProfileName}",
+                    $"Mode: direct ({resolved.Direct?.DisplayValue})",
+                    "Authentication: not required (JDownloader's local API is unauthenticated).",
+                ]);
+        }
+
         var status = await _authService.GetStatusAsync(resolved.ProfileName, cancellationToken);
         return new CommandOutput(
             status,

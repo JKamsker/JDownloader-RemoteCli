@@ -25,13 +25,17 @@ public sealed class WhoAmICommand : ProfileApiCommand<NoArgSettings>
             {
                 profile = resolved.ProfileName,
                 resolved.AccountEmail,
+                mode = ConnectionModes.ToName(resolved.ConnectionMode),
+                endpoint = resolved.Direct?.DisplayValue,
                 resolved.ProfileSource,
                 resolved.OutputMode,
                 resolved.TimeoutSeconds,
             },
             [
                 $"Profile: {resolved.ProfileName}",
-                $"Email: {resolved.AccountEmail ?? "(none)"}",
+                resolved.IsDirect
+                    ? $"Mode: direct ({resolved.Direct?.DisplayValue})"
+                    : $"Email: {resolved.AccountEmail ?? "(none)"}",
                 $"Profile source: {resolved.ProfileSource}",
                 $"Output mode: {resolved.OutputMode}",
                 $"Timeout: {resolved.TimeoutSeconds}s",

@@ -29,6 +29,7 @@ public sealed class ListDevicesCommand : ProfileApiCommand<NoArgSettings>
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        DirectModeGuard.RequireMyJd(resolved, "device list");
         var warnings = new List<string>();
         var config = await _profileStore.LoadAsync(cancellationToken);
         IReadOnlyList<ResolvedDevice>? liveDevices = null;

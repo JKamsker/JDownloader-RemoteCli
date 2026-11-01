@@ -2,6 +2,10 @@
 
 Profiles hold defaults (like output mode and device selection) and stored account/device metadata.
 
+A profile is also a *connection*: it is either a My.JDownloader profile (default) or a `direct` profile that talks to
+JDownloader's local API (`host`, `port`, `useHttps`, `allowRemote`). Manage them with `jdr connection ...`; see
+[12_Direct_Connection.md](12_Direct_Connection.md).
+
 ## Resolution order (high level)
 
 Most commands resolve settings in this order:

@@ -37,6 +37,7 @@ public sealed class UseDeviceCommand : ProfileApiCommand<UseDeviceSettings>
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        DirectModeGuard.RequireMyJd(resolved, "device use");
         if (string.IsNullOrWhiteSpace(settings.Device))
             throw CliException.Usage("device use requires --device <id-or-name>.");
 

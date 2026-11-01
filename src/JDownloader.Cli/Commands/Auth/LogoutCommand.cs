@@ -25,6 +25,7 @@ public sealed class LogoutCommand : ProfileApiCommand<NoArgSettings>
         ResolvedProfileContext resolved,
         CancellationToken cancellationToken)
     {
+        DirectModeGuard.RequireMyJd(resolved, "auth logout");
         if (settings.DryRun)
         {
             return new CommandOutput(

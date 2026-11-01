@@ -51,7 +51,9 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
             profiles = config.Profiles.Keys.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray(),
             config.DefaultProfile,
             resolvedProfile = resolved?.ProfileName,
-            resolvedDevice = resolved?.Device is null ? null : new { resolved.Device.Id, resolved.Device.Name },
+            connectionMode = resolved is null ? null : ConnectionModes.ToName(resolved.ConnectionMode),
+            directEndpoint = resolved?.Direct?.DisplayValue,
+            resolvedDevice = resolved?.Device is null || resolved.IsDirect ? null : new { resolved.Device.Id, resolved.Device.Name },
             resolvedOutputMode = resolved?.OutputMode.ToString(),
             resolutionError,
         };
@@ -66,7 +68,9 @@ public sealed class DoctorCommand : AnonymousCommand<NoArgSettings>
                 $"Profiles: {config.Profiles.Count}",
                 $"Default profile: {config.DefaultProfile ?? "(none)"}",
                 $"Resolved profile: {resolved?.ProfileName ?? "(none)"}",
-                $"Resolved device: {resolved?.Device?.DisplayValue ?? "(none)"}",
+                $"Connection mode: {(resolved is null ? "(none)" : ConnectionModes.ToName(resolved.ConnectionMode))}",
+                $"Direct endpoint: {resolved?.Direct?.DisplayValue ?? "(n/a)"}",
+                $"Resolved device: {(resolved?.IsDirect == true ? "(n/a, direct)" : resolved?.Device?.DisplayValue ?? "(none)")}",
                 $"Resolve error: {resolutionError ?? "(none)"}",
             ]);
     }

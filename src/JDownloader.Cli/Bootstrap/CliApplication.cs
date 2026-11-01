@@ -5,6 +5,7 @@ using JDownloader.Cli.Config;
 using JDownloader.Cli.Documentation;
 using JDownloader.Cli.Runtime;
 using JDownloader.Cli.Transport;
+using JDownloader.Cli.Transport.Direct;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
@@ -28,7 +29,11 @@ public static class CliApplication
         services.AddSingleton<IRequestIdProvider, TimestampRequestIdProvider>();
         services.AddSingleton<IMyJdRelayClient, MyJdRelayClient>();
         services.AddSingleton<IDeviceCatalog, DeviceCatalog>();
-        services.AddSingleton<IMyJdTransport, LiveMyJdTransport>();
+        services.AddSingleton<LiveMyJdTransport>();
+        services.AddSingleton<IDirectHttpClientFactory, DirectHttpClientFactory>();
+        services.AddSingleton<IDirectApiClient, DirectApiClient>();
+        services.AddSingleton<DirectTransport>();
+        services.AddSingleton<IMyJdTransport, RoutingTransport>();
         configureServices?.Invoke(services);
 
         var app = new CommandApp(new TypeRegistrar(services));
@@ -38,6 +43,7 @@ public static class CliApplication
             config.SetApplicationVersion(GetVersion());
 
             config.RegisterAuthCommands();
+            config.RegisterConnectionCommands();
             config.RegisterDeviceCommands();
             config.RegisterDownloadsCommands();
             config.RegisterGrabberCommands();

@@ -10,7 +10,7 @@ internal static class MyJdParameterSupport
         object queryObject,
         IReadOnlyList<string>? warnings)
     {
-        return (new object?[] { JsonSerializer.Serialize(queryObject) }, warnings);
+        return (new object?[] { JsonStringParameterMarker.Mark(JsonSerializer.Serialize(queryObject)) }, warnings);
     }
 
     public static (object? Parameters, IReadOnlyList<string>? Warnings) BuildRawParameters(MyJdRequestPlan plan)

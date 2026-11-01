@@ -15,6 +15,15 @@ public sealed class ProfileRecord
     public string? Output { get; set; }
     public int? TimeoutSeconds { get; set; }
     public List<KnownDeviceRecord> KnownDevices { get; set; } = [];
+
+    /// <summary>Connection mode: "myjd" (default when absent) or "direct".</summary>
+    public string? Mode { get; set; }
+    public string? Host { get; set; }
+    public int? Port { get; set; }
+    public bool? UseHttps { get; set; }
+
+    /// <summary>Explicit opt-in required before a direct profile may target a non-loopback host.</summary>
+    public bool? AllowRemote { get; set; }
 }
 
 public sealed class KnownDeviceRecord
