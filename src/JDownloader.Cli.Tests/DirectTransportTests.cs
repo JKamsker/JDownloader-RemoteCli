@@ -168,6 +168,21 @@ public sealed class DirectTransportTests
         Assert.Empty(run.Relay.Invocations);
     }
 
+    [Theory]
+    [InlineData("https://api.jdownloader.org/my/listdevices")]
+    [InlineData("//evil.example/downloadsV2/queryLinks")]
+    public async Task RawRequest_RejectsFullUrls_ButAcceptsRootedPaths(string url)
+    {
+        var handler = FakeDirectHandler.Json("""{"data":[]}""");
+
+        var rejected = await RunAsync(handler, ["advanced", "raw", "request", url, "--json"]);
+        var accepted = await RunAsync(handler, ["advanced", "raw", "request", "/downloadsV2/queryLinks", "--query-json", "{}", "--json"]);
+
+        Assert.Equal(2, rejected.Result.ExitCode);
+        Assert.Equal(0, accepted.Result.ExitCode);
+        Assert.Equal("/downloadsV2/queryLinks", Assert.Single(handler.Requests).Uri.AbsolutePath);
+    }
+
     [Fact]
     public async Task RemoteHost_AddsSecurityWarningToResults()
     {

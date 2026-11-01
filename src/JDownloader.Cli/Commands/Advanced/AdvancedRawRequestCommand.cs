@@ -118,7 +118,12 @@ public sealed class AdvancedRawRequestCommand : DeviceApiCommand<RawRequestSetti
 
         var trimmed = rawPath.Trim();
 
-        if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+        // On Unix a rooted path like "/downloadsV2/queryLinks" parses as an absolute file:// URI, so only
+        // treat the input as a URL when it has a scheme, is scheme-relative ("//host/..."), or is not rooted.
+        var looksLikeUrl = trimmed.Contains("://", StringComparison.Ordinal)
+            || trimmed.StartsWith("//", StringComparison.Ordinal)
+            || (!trimmed.StartsWith('/') && Uri.TryCreate(trimmed, UriKind.Absolute, out _));
+        if (looksLikeUrl)
         {
             throw CliException.Usage(
                 "advanced raw request expects an endpoint path, not a full relay URL.",
